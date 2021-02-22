@@ -4,7 +4,12 @@ import (
 	"container/list"
 	"fmt"
 	"math/bits"
+	"os"
+	"sort"
+	"strconv"
 	"strings"
+
+	"github.com/fudute/go-leetcode/limits"
 )
 
 //ListNode singal linked list
@@ -123,27 +128,6 @@ func hasCycle(head *ListNode) bool {
 	return false
 }
 
-func quickSort(nums []int) {
-	if len(nums) == 1 || len(nums) == 0 {
-		return
-	}
-	cmp := nums[0]
-	low, high := 0, len(nums)-1
-	for low < high {
-		for low < high && nums[high] >= cmp {
-			high--
-		}
-		nums[low] = nums[high]
-		for low < high && nums[low] <= cmp {
-			low++
-		}
-		nums[high] = nums[low]
-	}
-	nums[low] = cmp
-	quickSort(nums[0:low])
-	quickSort(nums[low+1:])
-	return
-}
 func twoSum(nums []int, target int) []int {
 	m := make(map[int]int)
 	ret := make([]int, 2)
@@ -231,14 +215,6 @@ func findMid(head *ListNode) *ListNode {
 		slow = slow.Next
 	}
 	return pre
-}
-
-func printList(head *ListNode) {
-	for head != nil {
-		fmt.Printf("%d ", head.Val)
-		head = head.Next
-	}
-	fmt.Println()
 }
 
 func reverse(s []int) []int {
@@ -778,12 +754,6 @@ func matrixReshape(nums [][]int, r int, c int) [][]int {
 	return ret
 }
 
-// IntMax int的最大值
-const IntMax = int(^uint(0) >> 1)
-
-// IntMin int的最小值
-const IntMin = ^IntMax
-
 // 查找两个有序链表的中位数
 func findMedianSortedArrays(nums1 []int, nums2 []int) float64 {
 
@@ -802,7 +772,7 @@ func findMedianSortedArrays(nums1 []int, nums2 []int) float64 {
 	mid1 := (low + high) / 2
 	mid2 := half - mid1
 	for low <= high {
-		l1, l2, r1, r2 := IntMin, IntMin, IntMax, IntMax
+		l1, l2, r1, r2 := limits.IntMin, limits.IntMin, limits.IntMax, limits.IntMax
 
 		if mid1-1 >= 0 {
 			l1 = nums1[mid1-1]
@@ -847,9 +817,289 @@ func findMedianSortedArrays(nums1 []int, nums2 []int) float64 {
 	return 0
 }
 
-func main() {
-	nums1 := []int{2, 3}
-	nums2 := []int{1}
+func findMaxConsecutiveOnes(nums []int) int {
+	var ret, count int
 
-	fmt.Println(findMedianSortedArrays(nums1, nums2))
+	for i := 0; i < len(nums); i++ {
+		if nums[i] == 1 {
+			count++
+		} else {
+			if count > ret {
+				ret = count
+			}
+			count = 0
+		}
+	}
+	return ret
+}
+
+// 最大连续1的个数Ⅲ
+// 只要区间[left, right]内0的个数小于K，那么就可以构造出长度为right-left的区间
+// 所以就采用双指针的方式
+func longestOnes(A []int, K int) int {
+	var left, right, count0, ret int
+	for right < len(A) {
+		if A[right] == 0 {
+			if count0 < K {
+				count0++
+			} else {
+				for A[left] == 1 {
+					left++
+				}
+				// 去掉一个0
+				left++
+			}
+		}
+		right++
+		if right-left > ret {
+			ret = right - left
+		}
+	}
+	return ret
+}
+
+func runningSum(nums []int) []int {
+	if nums == nil || len(nums) == 0 {
+		return nums
+	}
+	ret := make([]int, len(nums))
+	ret[0] = nums[0]
+	for i := 1; i < len(nums); i++ {
+		ret[i] = ret[i-1] + nums[i]
+	}
+	return ret
+}
+
+func removeZeroSumSublists(head *ListNode) *ListNode {
+	ret, ok := doRemoveZeroSumSublist(head)
+	for ok {
+		ret, ok = doRemoveZeroSumSublist(ret)
+	}
+	return ret
+}
+func doRemoveZeroSumSublist(head *ListNode) (*ListNode, bool) {
+	// 需要在链表的前面添加一个val为0的头结点，方便后面返回
+	ret := &ListNode{
+		Val:  0,
+		Next: head,
+	}
+	p := ret
+
+	// sum -- Listnode
+	m := make(map[int]*ListNode)
+
+	sum := 0
+	for p != nil {
+		sum += p.Val
+
+		node, ok := m[sum]
+		if ok {
+			// 说明从node到当前节点之间的所有节点和为0，删除
+			node.Next = p.Next
+			return ret.Next, true
+		}
+		m[sum] = p
+		p = p.Next
+	}
+	return ret.Next, false
+}
+
+func isToeplitzMatrix(matrix [][]int) bool {
+	m, n := len(matrix), len(matrix[0])
+
+	for i := 0; i < m; i++ {
+		for j := 0; j < n; j++ {
+			if i-1 >= 0 && j-1 >= 0 && matrix[i-1][j-1] != matrix[i][j] {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func binarySearch(nums []int, target int) int {
+	low, high := 0, len(nums)-1
+	for low <= high {
+		mid := (low + high) / 2
+		if nums[mid] == target {
+			return mid
+		}
+		if nums[mid] < target {
+			low = mid + 1
+		}
+		high = mid - 1
+	}
+	return -1
+}
+
+// 对于nums中的每一个元素，调用condition(i)之后得到的结果集合应该满足这样的形式:
+// [1, 1, 1, 0, -1, -1, -1]
+func conditionalBinarySearch(nums []int, condition func(ind int) int) int {
+	low, high := 0, len(nums)-1
+	for low <= high {
+		mid := (low + high) / 2
+		switch condition(mid) {
+		case 0:
+			return mid
+		case 1:
+			low = mid + 1
+		case -1:
+			high = mid - 1
+		}
+	}
+	return -1
+}
+func searchRange(nums []int, target int) []int {
+	ret := make([]int, 2)
+	ret[0] = conditionalBinarySearch(nums, func(ind int) int {
+		if nums[ind] == target && (ind == 0 || nums[ind-1] < target) {
+			return 0
+		}
+		if nums[ind] < target {
+			return 1
+		}
+		return -1
+	})
+	ret[1] = conditionalBinarySearch(nums, func(ind int) int {
+		if nums[ind] == target && (ind == len(nums)-1 || nums[ind+1] > target) {
+			return 0
+		}
+		if nums[ind] <= target {
+			return 1
+		}
+		return -1
+	})
+	return ret
+}
+
+func searchRange2(nums []int, target int) []int {
+	for i := range nums {
+		if nums[i] == target {
+			j := i + 1
+			for j < len(nums) {
+				if nums[j] == target {
+					j++
+				} else {
+					break
+				}
+			}
+			return []int{i, j - 1}
+		}
+	}
+	return []int{-1, -1}
+}
+
+func fib(n int) int {
+	if n < 2 {
+		return n
+	}
+
+	fibs := make([]int, n+1)
+	fibs[0] = 0
+	fibs[1] = 1
+
+	for i := 2; i <= n; i++ {
+		fibs[i] = fibs[i-1] + fibs[i-2]
+	}
+	return fibs[n]
+}
+
+var longestPath int
+
+func longestUnivaluePath(root *TreeNode) int {
+	longestPath = 0
+	longestUnivaluePathWithRoot(root)
+	return longestPath
+}
+
+func longestUnivaluePathWithRoot(root *TreeNode) int {
+	if root == nil {
+		return 0
+	}
+	// left 从当前根节点向左子树延伸的单值最短路径
+	var left, right int
+	if root.Left != nil {
+		if root.Left.Val == root.Val {
+			left = longestUnivaluePathWithRoot(root.Left) + 1
+		} else {
+			longestUnivaluePathWithRoot(root.Left)
+		}
+	}
+
+	if root.Right != nil {
+		if root.Right.Val == root.Val {
+			right = longestUnivaluePathWithRoot(root.Right) + 1
+		} else {
+			longestUnivaluePathWithRoot(root.Right)
+		}
+	}
+	if left+right > longestPath {
+		longestPath = left + right
+	}
+
+	if left > right {
+		return left
+	}
+	return right
+}
+
+type nodeInfo struct {
+	col   int
+	row   int
+	value int
+}
+
+type verticalTraversalSort []nodeInfo
+
+func (a verticalTraversalSort) Len() int      { return len(a) }
+func (a verticalTraversalSort) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a verticalTraversalSort) Less(i, j int) bool {
+	if a[i].col != a[j].col {
+		return a[i].col < a[j].col
+	}
+	if a[i].row != a[j].row {
+		return a[i].row < a[j].row
+	}
+	return a[i].value < a[j].value
+}
+func verticalTraversal(root *TreeNode) [][]int {
+	nodes := make([]nodeInfo, 0)
+	inOrder(root, 0, 0, nodes)
+	sort.Sort(verticalTraversalSort(nodes))
+
+	ret := make([][]int, 0)
+	i := 0
+	for i < len(nodes) {
+		ret = append(ret, make([]int, 0))
+		last := len(ret) - 1
+		ret[last] = append(ret[last], nodes[i].value)
+		i++
+		for i < len(nodes) && nodes[i].col == nodes[i-1].col {
+			ret[last] = append(ret[last], nodes[i].value)
+			i++
+		}
+	}
+	return ret
+}
+
+func inOrder(root *TreeNode, row, col int, nodes []nodeInfo) {
+	if root == nil {
+		return
+	}
+	nodes = append(nodes, nodeInfo{
+		col:   col,
+		row:   row,
+		value: root.Val,
+	})
+
+	inOrder(root.Left, row+1, col-1, nodes)
+	inOrder(root.Right, row+1, col+1, nodes)
+}
+func main() {
+	val, err := strconv.Atoi(" 2")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(0)
+	}
+	fmt.Println(val)
 }
