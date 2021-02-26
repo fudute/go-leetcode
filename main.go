@@ -3,13 +3,12 @@ package main
 import (
 	"container/list"
 	"fmt"
+	"math"
 	"math/bits"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/fudute/go-leetcode/limits"
+	"unsafe"
 )
 
 //ListNode singal linked list
@@ -35,6 +34,11 @@ func reverseList(head *ListNode) *ListNode {
 		ret = tmp
 	}
 	return ret
+}
+
+func printInerStructOfSlice(s []int) {
+	iner := (*[3]int)(unsafe.Pointer(&s))
+	fmt.Println("inerstruct of nil slice:", iner)
 }
 
 // Len return lenght of list
@@ -463,24 +467,77 @@ func permute(nums []int) [][]int {
 	if len(nums) == 1 {
 		return [][]int{nums}
 	}
-
 	res := [][]int{}
+	visited := make([]int, len(nums))
 
-	for i, num := range nums {
-		// 把num从 nums 拿出去 得到tmp
-		tmp := make([]int, len(nums)-1)
-		copy(tmp[0:], nums[0:i])
-		copy(tmp[i:], nums[i+1:])
+	// 这里我定义了一个内部函数变量，这样做的好处是可以共享permute函数内的变量，减少参数的传递
+	var backtrack func(int, []int)
+	backtrack = func(pos int, output []int) {
+		if pos == len(nums) {
+			tmp := make([]int, len(nums))
+			copy(tmp, output)
+			res = append(res, tmp)
+			return
+		}
 
-		// sub 是把num 拿出去后，数组中剩余数据的全排列
-		sub := permute(tmp)
-		for _, s := range sub {
-			res = append(res, append(s, num))
+		for i := 0; i < len(nums); i++ {
+			if visited[i] == 0 {
+				visited[i] = 1
+				backtrack(pos+1, append(output, nums[i]))
+				visited[i] = 0
+			}
 		}
 	}
+
+	output := make([]int, 0)
+	backtrack(0, output)
+
 	return res
 }
 
+func permuteUnique(nums []int) [][]int {
+	if len(nums) == 1 {
+		return [][]int{nums}
+	}
+	res := [][]int{}
+	visited := make([]int, len(nums))
+
+	var backtrack func(int, []int)
+	backtrack = func(pos int, output []int) {
+		if pos == len(nums) {
+			tmp := make([]int, len(nums))
+			copy(tmp, output)
+			res = append(res, tmp)
+			return
+		}
+
+		// 在这里，增加一个防止重复的set,记录在当前ind已经安排了哪些值
+		m := make(map[int]struct{})
+		for i := 0; i < len(nums); i++ {
+			if visited[i] == 0 {
+				if _, ok := m[nums[i]]; ok {
+					continue
+				}
+				visited[i] = 1
+				backtrack(pos+1, append(output, nums[i]))
+				visited[i] = 0
+				m[nums[i]] = struct{}{}
+			}
+		}
+	}
+
+	backtrack(0, []int{})
+
+	// sort.Slice(res, func(i, j int) bool {
+	// 	for k := 0; k < len(res[0]); k++ {
+	// 		if res[i][k] != res[j][k] {
+	// 			return res[i][k] < res[j][k]
+	// 		}
+	// 	}
+	// 	return len(res[i]) < len(res[j])
+	// })
+	return res
+}
 func reverseWords(s string) string {
 	var rev []string
 	words := strings.Split(s, " ")
@@ -772,7 +829,7 @@ func findMedianSortedArrays(nums1 []int, nums2 []int) float64 {
 	mid1 := (low + high) / 2
 	mid2 := half - mid1
 	for low <= high {
-		l1, l2, r1, r2 := limits.IntMin, limits.IntMin, limits.IntMax, limits.IntMax
+		l1, l2, r1, r2 := math.MinInt32, math.MinInt32, math.MaxInt32, math.MaxInt32
 
 		if mid1-1 >= 0 {
 			l1 = nums1[mid1-1]
@@ -1062,9 +1119,12 @@ func (a verticalTraversalSort) Less(i, j int) bool {
 	}
 	return a[i].value < a[j].value
 }
+
+var nodes []nodeInfo
+
 func verticalTraversal(root *TreeNode) [][]int {
-	nodes := make([]nodeInfo, 0)
-	inOrder(root, 0, 0, nodes)
+	nodes = make([]nodeInfo, 0)
+	inOrder(root, 0, 0)
 	sort.Sort(verticalTraversalSort(nodes))
 
 	ret := make([][]int, 0)
@@ -1082,7 +1142,7 @@ func verticalTraversal(root *TreeNode) [][]int {
 	return ret
 }
 
-func inOrder(root *TreeNode, row, col int, nodes []nodeInfo) {
+func inOrder(root *TreeNode, row, col int) {
 	if root == nil {
 		return
 	}
@@ -1092,14 +1152,297 @@ func inOrder(root *TreeNode, row, col int, nodes []nodeInfo) {
 		value: root.Val,
 	})
 
-	inOrder(root.Left, row+1, col-1, nodes)
-	inOrder(root.Right, row+1, col+1, nodes)
+	inOrder(root.Left, row+1, col-1)
+	inOrder(root.Right, row+1, col+1)
+}
+
+func maxSatisfied(customers []int, grumpy []int, X int) int {
+	ret, satisfiied := 0, 0
+	for i := 0; i < len(customers); i++ {
+		if grumpy[i] == 0 {
+			satisfiied += customers[i]
+		}
+	}
+
+	for i := 0; i < X; i++ {
+		if grumpy[i] == 1 {
+			satisfiied += customers[i]
+		}
+	}
+	ret = satisfiied
+	for i := X; i < len(customers); i++ {
+		if grumpy[i] == 1 {
+			satisfiied += customers[i]
+		}
+		if grumpy[i-X] == 1 {
+			satisfiied -= customers[i-X]
+		}
+		if satisfiied > ret {
+			ret = satisfiied
+		}
+	}
+	return ret
+}
+
+func exchangeBits(num int) int {
+	// 奇数位右移，偶数位左移
+	odd := num >> 1 & 0x55555555
+	even := num << 1 & 0xaaaaaaaa
+	return odd | even
+}
+
+func subarraySum(nums []int, k int) int {
+	m := make(map[int]int)
+	m[0] = 1
+	subSum := 0
+	ret := 0
+	for i := 0; i < len(nums); i++ {
+		subSum += nums[i]
+		times, ok := m[subSum-k]
+		if ok {
+			ret += times
+		}
+		m[subSum]++
+	}
+	return ret
+}
+func canJump(nums []int) bool {
+	cur := 0
+	for {
+		// 判断能否跳到终点
+		if nums[cur]+cur >= len(nums)-1 {
+			return true
+		}
+		// 如果当前位置能跳的步数为0，则无法到达终点
+		if nums[cur] == 0 {
+			return false
+		}
+		// next表示接下来该跳多少步
+		next, maxStep := 0, 0
+		// i表示跳多少步
+		for i := 1; i <= nums[cur]; i++ {
+			if maxStep <= nums[cur+i]+i {
+				maxStep = nums[cur+i] + i
+				next = i
+			}
+		}
+		cur += next
+	}
+}
+
+func findNthDigit(n int) int {
+	if n < 10 {
+		return n
+	}
+	n -= 10
+
+	i := 2
+	for ; n >= 9*i*int(math.Pow10(i-1)); i++ {
+		n = n - 9*i*int(math.Pow10(i-1))
+	}
+
+	num := n/i + int(math.Pow10(i-1))
+	index := n % i
+	numStr := strconv.Itoa(num)
+	return int(numStr[index] - '0')
+}
+
+func flipAndInvertImage(A [][]int) [][]int {
+	for i := 0; i < len(A); i++ {
+		for j := 0; j < len(A[i])/2; j++ {
+			A[i][j], A[i][len(A[i])-j-1] = (A[i][len(A[i])-j-1]+1)%2, (A[i][j]+1)%2
+		}
+	}
+
+	if len(A[0])%2 == 1 {
+		for i := 0; i < len(A); i++ {
+			A[i][len(A[i])/2] = (A[i][len(A[i])/2] + 1) % 2
+		}
+	}
+	return A
+}
+
+func mergeAlternately(word1 string, word2 string) string {
+	var builder strings.Builder
+	var isChanged = false
+	if len(word1) > len(word2) {
+		word1, word2 = word2, word1
+		isChanged = true
+	}
+
+	for i := 0; i < len(word1); i++ {
+		if !isChanged {
+			builder.WriteByte(word1[i])
+			builder.WriteByte(word2[i])
+		} else {
+			builder.WriteByte(word2[i])
+			builder.WriteByte(word1[i])
+		}
+	}
+
+	for i := len(word1); i < len(word2); i++ {
+		builder.WriteByte(word2[i])
+	}
+
+	return builder.String()
+}
+
+func minOperations(boxes string) []int {
+	left, right := 0, 0
+
+	weight := 0
+	for i := 0; i < len(boxes); i++ {
+		if boxes[i] == '1' {
+			right++
+			weight += i
+		}
+	}
+
+	ret := make([]int, len(boxes))
+	ret[0] = weight
+	for i := 1; i < len(boxes); i++ {
+		if boxes[i-1] == '1' {
+			left++
+			right--
+		}
+		weight = weight - right + left
+		ret[i] = weight
+	}
+	return ret
+}
+
+func maximumScore(nums []int, multipliers []int) int {
+	ret := 0
+	if len(multipliers) == 0 {
+		return ret
+	}
+	left := multipliers[0]*nums[0] + maximumScore(nums[1:], multipliers[1:])
+	right := multipliers[0]*nums[len(nums)-1] + maximumScore(nums[0:len(nums)-1], multipliers[1:])
+
+	if left > right {
+		return left
+	}
+	return right
+}
+
+func combinationSum(candidates []int, target int) [][]int {
+	if target == 0 {
+		// 存一个空元素，说明能够找到
+		return [][]int{
+			{},
+		}
+	}
+	if len(candidates) == 0 || target < 0 {
+		return [][]int{}
+	}
+
+	// 不选择当前元素
+	A := combinationSum(candidates[1:], target)
+	// 选择当前元素
+	B := combinationSum(candidates, target-candidates[0])
+
+	for i := 0; i < len(B); i++ {
+		B[i] = append(B[i], candidates[0])
+	}
+	ret := append(A, B...)
+	return ret
+}
+func transpose(matrix [][]int) [][]int {
+	if len(matrix) == 0 {
+		return matrix
+	}
+	m, n := len(matrix), len(matrix[0])
+
+	ret := make([][]int, n)
+	for i := 0; i < n; i++ {
+		ret[i] = make([]int, m)
+	}
+
+	for i := 0; i < m; i++ {
+		for j := 0; j < n; j++ {
+			ret[j][i] = matrix[i][j]
+		}
+	}
+	return ret
+}
+
+func generateParenthesis(n int) []string {
+
+	res := []string{}
+
+	var putParenthesis func(int, int, []byte)
+	putParenthesis = func(left, right int, output []byte) {
+		if right == 0 {
+			res = append(res, string(output))
+		}
+
+		if left > 0 {
+			putParenthesis(left-1, right, append(output, '('))
+		}
+		if right > left {
+			putParenthesis(left, right-1, append(output, ')'))
+		}
+	}
+
+	putParenthesis(n, n, []byte{})
+	return res
+}
+
+func findNumOfValidWords(words []string, puzzles []string) []int {
+
+	wordsBitsMap := make(map[uint32]struct{}, 0)
+	puzzlesBitsMap := make(map[uint32]int, len(puzzles))
+
+	for i := 0; i < len(words); i++ {
+		tmp := stringToBits(words[i])
+		if bits.OnesCount32(tmp) <= 7 {
+			wordsBitsMap[tmp] = struct{}{}
+		}
+	}
+	for i := 0; i < len(puzzles); i++ {
+		// tmp := stringToBits(puzzles[i])
+		// puzzlesBitsMap[i] = stringToBits(puzzles[i])
+	}
+
+	ret := make([]int, len(puzzles))
+	for i := 0; i < len(wordsBitsMap); i++ {
+		for j := 0; j < len(puzzles); j++ {
+			first := puzzles[j][0] - 'a'
+			// words[i]不包含puzzles[j]的第一个字母
+			if wordsBitsMap[i]>>uint32(first)&1 == 0 {
+				continue
+			}
+			if wordsBitsMap[i]&puzzlesBitsMap[j] == wordsBitsMap[i] {
+				ret[j]++
+			}
+		}
+	}
+	return ret
+}
+
+func subsets(nums []int) [][]int {
+	ret := [][]int{}
+
+	var helper func(pos int, output []int)
+
+	helper = func(pos int, output []int) {
+		if pos == len(nums) {
+			tmp := make([]int, len(output))
+			copy(tmp, output)
+			ret = append(ret, tmp)
+			return
+		}
+		helper(pos+1, append(output, nums[pos]))
+		helper(pos+1, output)
+	}
+
+	helper(0, []int{})
+	return ret
 }
 func main() {
-	val, err := strconv.Atoi(" 2")
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(0)
-	}
-	fmt.Println(val)
+	// 	["apple","pleas","please"]
+	// ["aelwxyz","aelpxyz","aelpsxy","saelpxy","xaelpsy"]
+	words := []string{"aaaa", "asas", "able", "ability", "actt", "actor", "access"}
+	puzzles := []string{"aboveyz", "abrodyz", "abslute", "absoryz", "actresz", "gaswxyz"}
+	fmt.Println(findNumOfValidWords(words, puzzles))
 }

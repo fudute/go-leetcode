@@ -117,3 +117,14 @@ func stringToBinaryTree(str string) (*TreeNode, error) {
 
 	return root, nil
 }
+
+// 将只包含[a-z]的string转换为长度为26的var bs uint32,
+// bs的第i位为0表示string中包含 byte('a'+i)
+func stringToBits(word string) uint32 {
+	var bs uint32
+	for _, v := range word {
+		ind := v - 'a'
+		bs = bs | 1<<uint32(ind)
+	}
+	return bs
+}

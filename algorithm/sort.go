@@ -1,6 +1,6 @@
 package algorithm
 
-import "github.com/fudute/go-leetcode/limits"
+import "math"
 
 // SortByValue 升序排列
 type SortByValue []int
@@ -52,8 +52,8 @@ func merge(A, B []int) []int {
 
 	var ind, p, q int
 	for ind < len(C) {
-		a := getOrDefault(A, p, limits.IntMax)
-		b := getOrDefault(B, q, limits.IntMax)
+		a := getOrDefault(A, p, math.MaxInt32)
+		b := getOrDefault(B, q, math.MaxInt32)
 		if a < b {
 			C[ind] = a
 			p++
