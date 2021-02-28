@@ -1389,35 +1389,48 @@ func generateParenthesis(n int) []string {
 }
 
 func findNumOfValidWords(words []string, puzzles []string) []int {
-
-	wordsBitsMap := make(map[uint32]struct{}, 0)
-	puzzlesBitsMap := make(map[uint32]int, len(puzzles))
-
-	for i := 0; i < len(words); i++ {
-		tmp := stringToBits(words[i])
-		if bits.OnesCount32(tmp) <= 7 {
-			wordsBitsMap[tmp] = struct{}{}
+	const puzzleLength = 7
+	cnt := map[int]int{}
+	for _, s := range words {
+		mask := 0
+		for _, ch := range s {
+			mask |= 1 << (ch - 'a')
+		}
+		if bits.OnesCount(uint(mask)) <= puzzleLength {
+			cnt[mask]++
 		}
 	}
-	for i := 0; i < len(puzzles); i++ {
-		// tmp := stringToBits(puzzles[i])
-		// puzzlesBitsMap[i] = stringToBits(puzzles[i])
-	}
 
-	ret := make([]int, len(puzzles))
-	for i := 0; i < len(wordsBitsMap); i++ {
-		for j := 0; j < len(puzzles); j++ {
-			first := puzzles[j][0] - 'a'
-			// words[i]不包含puzzles[j]的第一个字母
-			if wordsBitsMap[i]>>uint32(first)&1 == 0 {
-				continue
-			}
-			if wordsBitsMap[i]&puzzlesBitsMap[j] == wordsBitsMap[i] {
-				ret[j]++
+	ans := make([]int, len(puzzles))
+	for i, s := range puzzles {
+		first := 1 << (s[0] - 'a')
+
+		// 枚举子集方法一
+		//for choose := 0; choose < 1<<(puzzleLength-1); choose++ {
+		//    mask := 0
+		//    for j := 0; j < puzzleLength-1; j++ {
+		//        if choose>>j&1 == 1 {
+		//            mask |= 1 << (s[j+1] - 'a')
+		//        }
+		//    }
+		//    ans[i] += cnt[mask|first]
+		//}
+
+		// 枚举子集方法二
+		mask := 0
+		for _, ch := range s[1:] {
+			mask |= 1 << (ch - 'a')
+		}
+		subset := mask
+		for {
+			ans[i] += cnt[subset|first]
+			subset = (subset - 1) & mask
+			if subset == mask {
+				break
 			}
 		}
 	}
-	return ret
+	return ans
 }
 
 func subsets(nums []int) [][]int {
@@ -1439,10 +1452,274 @@ func subsets(nums []int) [][]int {
 	helper(0, []int{})
 	return ret
 }
+
+func checkSubTree(t1 *TreeNode, t2 *TreeNode) bool {
+	var self, left, right bool
+
+	self = isSameTree(t1, t2)
+	if t1 != nil {
+		left = checkSubTree(t1.Left, t2)
+		right = checkSubTree(t1.Right, t2)
+	}
+	return self || left || right
+}
+
+func isSameTree(t1, t2 *TreeNode) bool {
+	if t1 == nil && t2 == nil {
+		return true
+	}
+	if t1 == nil || t2 == nil {
+		return false
+	}
+	if t1.Val == t2.Val {
+		return isSameTree(t1.Left, t2.Left) && isSameTree(t1.Right, t2.Right)
+	}
+	return false
+}
+func waysToStep(n int) int {
+	// dp[i]表示有i个台阶的上法
+	dp := make([]int, 4)
+	dp[1] = 1
+	dp[2] = 2
+	dp[3] = 4
+
+	for i := 4; i < n+1; i++ {
+		dp = append(dp, (dp[i-1]+dp[i-2]+dp[i-3])%1000000007)
+	}
+	return dp[n]
+}
+
+func pathWithObstacles(obstacleGrid [][]int) [][]int {
+	var ret [][]int
+	m, n := len(obstacleGrid), len(obstacleGrid[0])
+
+	visted := make([][]bool, len(obstacleGrid))
+	for i := 0; i < len(visted); i++ {
+		visted[i] = make([]bool, len(obstacleGrid[0]))
+	}
+
+	var move func(x, y int, path [][]int) bool
+	move = func(x, y int, path [][]int) bool {
+		if visted[x][y] {
+			return false
+		}
+		if obstacleGrid[x][y] == 1 {
+			return false
+		}
+		path = append(path, []int{x, y})
+		if x == m-1 && y == n-1 {
+			ret = path
+			return true
+		}
+		if x+1 < m {
+			if move(x+1, y, path) {
+				return true
+			}
+		}
+		if y+1 < n {
+			if move(x, y+1, path) {
+				return true
+			}
+		}
+
+		visted[x][y] = true
+		return false
+	}
+	move(0, 0, [][]int{})
+	return ret
+}
+
+func reverseArray(data [][]int) [][]int {
+	for i := 0; i < len(data)/2; i++ {
+		data[i], data[len(data)-1-i] = data[len(data)-1-i], data[i]
+	}
+	return data
+}
+
+/*
+解题思路：
+遍历一遍数组，如果所有的字符都个数大于等于k，结果就是len(s)，
+如果某个字母s[i]不满足条件，那么只要在i左右两边执行上面相同的操作
+*/
+func longestSubstring(s string, k int) int {
+	// count[i]包含前i个字母的分布, 前i=0个字母的count[0]为全0
+	count := make([][]int, len(s)+1)
+	for i := 0; i < len(count); i++ {
+		count[i] = make([]int, 26)
+	}
+	subCount := make([]int, 26)
+	for i := 0; i < len(s); i++ {
+		ind := s[i] - 'a'
+		subCount[ind]++
+		copy(count[i+1], subCount)
+	}
+
+	var getLongestSubString func(left, right int) int
+
+	getLongestSubString = func(left, right int) int {
+		ret := 0
+		if left == right {
+			return 0
+		}
+		// 获得[left, right)区间内的字母出现次数
+		subCount := make([]int, 26)
+		for i := 0; i < 26; i++ {
+			subCount[i] = count[right][i] - count[left][i]
+		}
+		pre := left
+		for i := 0; i < 26; i++ {
+			if subCount[i] < k {
+				// 找到字母 subCount[i]+'a'在区间[pre, right)内的第一次出现位置first
+				// 然后只需要考虑[pre, first)区间是否满足条件
+				// 只尝试大于当前最大值的范围
+
+				if pre-i > ret {
+					tmp := getLongestSubString(pre, i)
+					if ret < tmp {
+						ret = tmp
+					}
+				}
+				pre = i + 1
+			}
+		}
+		return 0
+	}
+
+	return getLongestSubString(0, len(s))
+}
+
+func climbStairs(n int) int {
+	if n <= 2 {
+		return n
+	}
+	dp := make([]int, n+1)
+
+	dp[1] = 1
+	dp[2] = 2
+
+	for i := 3; i < len(dp); i++ {
+		dp[i] = dp[i-1] + dp[i-2]
+	}
+	return dp[n]
+}
+
+func numTilePossibilities(tiles string) int {
+	ret := 0
+
+	visited := make([]bool, len(tiles))
+
+	var backtrack func(pos int)
+	backtrack = func(pos int) {
+		ret++
+		if pos == len(tiles) {
+			return
+		}
+
+		// 表示当前位置已经选择过得字符
+		choosedInCurrentPos := make([]bool, 26)
+		for i := 0; i < len(tiles); i++ {
+			ind := tiles[i] - 'A'
+			if !visited[i] && !choosedInCurrentPos[ind] {
+				visited[i] = true
+				backtrack(pos + 1)
+				visited[i] = false
+				choosedInCurrentPos[ind] = true
+			}
+		}
+	}
+
+	backtrack(0)
+	// 排除空选择
+	return ret - 1
+}
+
+func minFlips(a int, b int, c int) int {
+	ret := 0
+	for i := 0; i < 32; i++ {
+		ai := a >> i & 1
+		bi := b >> i & 1
+		ci := c >> i & 1
+
+		if ci == 0 {
+			ret += ai + bi
+		} else if ai+bi == 0 {
+			ret++
+		}
+	}
+	return ret
+}
+
+func findErrorNums(nums []int) []int {
+	var dup, miss int
+	for i := 0; i < len(nums); i++ {
+		var ind int
+		if nums[i] > 0 {
+			ind = nums[i] - 1
+		} else {
+			ind = -nums[i] - 1
+		}
+
+		if nums[ind] < 0 {
+			dup = ind + 1
+		} else {
+			nums[ind] *= -1
+		}
+	}
+
+	for i := 0; i < len(nums); i++ {
+		if nums[i] > 0 {
+			miss = i + 1
+		}
+	}
+	return []int{dup, miss}
+}
+
+func largestDivisibleSubset(nums []int) []int {
+	if nums == nil || len(nums) == 0 {
+		return []int{}
+	}
+	// 首先sort一下，简化后面的讨论
+	sort.Ints(nums)
+
+	// dp[i] 表示已i结尾的最大整除子集
+	dp := make([]int, len(nums))
+	dp[0] = 1
+
+	// 长度最长的下标
+	last := 0
+	for i := 1; i < len(nums); i++ {
+		dp[i] = 1
+		for j := i - 1; j >= 0; j-- {
+			if nums[i]%nums[j] == 0 && dp[j]+1 > dp[i] {
+				dp[i] = dp[j] + 1
+				if dp[i] > dp[last] {
+					last = i
+				}
+			}
+		}
+	}
+
+	ret := make([]int, dp[last])
+
+	ret[len(ret)-1] = nums[last]
+	for i := len(ret) - 2; i >= 0; i-- {
+		for j := last; j >= 0; j-- {
+			if dp[last] == dp[j]+1 && nums[last]%nums[j] == 0 {
+				ret[i] = nums[j]
+				last = j
+				break
+			}
+		}
+	}
+	return ret
+}
+
+func solve(board [][]byte) {
+
+}
+
 func main() {
-	// 	["apple","pleas","please"]
-	// ["aelwxyz","aelpxyz","aelpsxy","saelpxy","xaelpsy"]
-	words := []string{"aaaa", "asas", "able", "ability", "actt", "actor", "access"}
-	puzzles := []string{"aboveyz", "abrodyz", "abslute", "absoryz", "actresz", "gaswxyz"}
-	fmt.Println(findNumOfValidWords(words, puzzles))
+	nums := []int{3, 4, 16, 8}
+
+	fmt.Println(largestDivisibleSubset(nums))
 }
