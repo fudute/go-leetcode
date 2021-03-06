@@ -1347,6 +1347,41 @@ func combinationSum(candidates []int, target int) [][]int {
 	ret := append(A, B...)
 	return ret
 }
+
+func combinationSum2(candidates []int, target int) [][]int {
+	ret := [][]int{}
+
+	sort.Ints(candidates)
+
+	var backtrack func(i, target int, output []int)
+
+	backtrack = func(i, target int, output []int) {
+		if target < 0 {
+			return
+		}
+		if target == 0 {
+			cp := make([]int, len(output))
+			copy(cp, output)
+			ret = append(ret, cp)
+			return
+		}
+
+		if i < len(candidates) {
+			j := i + 1
+
+			for j < len(candidates) && candidates[j] == candidates[j-1] {
+				j++
+			}
+
+			backtrack(i+1, target-candidates[i], append(output, candidates[i]))
+			backtrack(j, target, output)
+		}
+	}
+
+	backtrack(0, target, []int{})
+
+	return ret
+}
 func transpose(matrix [][]int) [][]int {
 	if len(matrix) == 0 {
 		return matrix
@@ -1714,12 +1749,375 @@ func largestDivisibleSubset(nums []int) []int {
 	return ret
 }
 
-func solve(board [][]byte) {
+func isMonotonic(A []int) bool {
+	if A[0] < A[len(A)-1] {
+		for i := 1; i < len(A); i++ {
+			if A[i]-A[i-1] < 0 {
+				return false
+			}
+		}
+	} else {
+		for i := len(A) - 2; i >= 0; i-- {
+			if A[i]-A[i+1] < 0 {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func searchBST(root *TreeNode, val int) *TreeNode {
+	if root == nil {
+		return nil
+	}
+
+	if root.Val == val {
+		return root
+	}
+
+	if root.Val > val {
+		return searchBST(root.Left, val)
+	}
+	return searchBST(root.Right, val)
 
 }
 
-func main() {
-	nums := []int{3, 4, 16, 8}
+func threeSum(nums []int) [][]int {
+	ret := [][]int{}
+	sort.Ints(nums)
+	for first := 0; first < len(nums); first++ {
+		// 每一次都取不同的数
+		if first == 0 || nums[first] != nums[first-1] {
+			third := len(nums) - 1
+			for second := first + 1; second < len(nums); second++ {
+				if second == first+1 || nums[second] != nums[second-1] {
+					for third > second && nums[first]+nums[second]+nums[third] > 0 {
+						third--
+					}
+					if third > second && nums[first]+nums[second]+nums[third] == 0 {
+						ret = append(ret, []int{nums[first], nums[second], nums[third]})
+					}
+				}
+			}
+		}
+	}
+	return ret
+}
 
-	fmt.Println(largestDivisibleSubset(nums))
+func duplicateZeros(arr []int) {
+	res := make([]int, len(arr))
+	ind := 0
+
+	for i := 0; i < len(arr) && ind < len(res); i++ {
+		if arr[i] == 0 {
+			res[ind] = 0
+			if ind+1 < len(res) {
+				res[ind+1] = 0
+			}
+			ind += 2
+		} else {
+			res[ind] = arr[i]
+			ind++
+		}
+	}
+	copy(arr, res)
+}
+
+func rotateString(A string, B string) bool {
+	if len(A) != len(B) {
+		return false
+	}
+
+	return strings.Contains(A+B, B)
+}
+
+func countBits(num int) []int {
+	if num == 0 {
+		return []int{0}
+	}
+	ret := make([]int, num+1)
+	ret[1] = 1
+	for i := 2; i <= num; i++ {
+		if i%2 == 0 {
+			ret[i] = ret[i/2]
+		} else {
+			ret[i] = ret[i-1] + 1
+		}
+	}
+	// for i := 0; i <= num; i++ {
+	// 	ret[i] = bits.OnesCount(uint(i))
+	// }
+	return ret
+}
+
+func reverseInt(x int) int {
+	var sb strings.Builder
+	fmt.Fprintln(&sb, x)
+
+	bs := []byte(sb.String())
+	for i := 0; i < len(bs)/2; i++ {
+		bs[i], bs[len(bs)-1-i] = bs[len(bs)-1-i], bs[i]
+	}
+	ret := 0
+
+	for i := 0; i < len(bs); i++ {
+		ret = ret*10 + int(bs[i]-'0')
+		if ret < 0 {
+			return 0
+		}
+	}
+	return ret
+}
+
+// 最长递增子序列
+func lengthOfLIS(nums []int) int {
+	dp := make([]int, len(nums))
+	dp[0] = 1
+	for i := 1; i < len(dp); i++ {
+		dp[i] = 1
+		for j := i - 1; j >= 0; j-- {
+			if nums[i] > nums[j] && dp[i] < dp[j]+1 {
+				dp[i] = dp[j] + 1
+			}
+		}
+	}
+
+	max := 0
+	for i := 0; i < len(dp); i++ {
+		if dp[i] > max {
+			max = dp[i]
+		}
+	}
+	return max
+}
+
+func maxEnvelopes(envelopes [][]int) int {
+	// 首先按宽度排序，然后问题就转化为了最长递增子数组
+	sort.Slice(envelopes, func(i, j int) bool {
+		return envelopes[i][0] < envelopes[j][0]
+	})
+
+	dp := make([]int, len(envelopes))
+	dp[0] = 1
+	for i := 1; i < len(dp); i++ {
+		dp[i] = 1
+		for j := i - 1; j >= 0; j-- {
+			if envelopes[i][0] > envelopes[j][0] && envelopes[i][1] > envelopes[j][1] && dp[i] < dp[j]+1 {
+				dp[i] = dp[j] + 1
+			}
+		}
+	}
+
+	max := 0
+	for i := 0; i < len(dp); i++ {
+		if dp[i] > max {
+			max = dp[i]
+		}
+	}
+	return max
+}
+func splitArraySameAverage(A []int) bool {
+	sort.Ints(A)
+
+	total := 0
+	for i := 0; i < len(A); i++ {
+		total += A[i]
+	}
+
+	average := float32(total) / float32(len(A))
+
+	// pos 表示当前遍历到的位置，n 表示个数，total 表示总和
+	var backtrack func(pos, n, total int) bool
+
+	backtrack = func(pos, n, total int) bool {
+		if float32(total)/float32(n) == average && n != len(A) {
+			return true
+		}
+		if pos == len(A) {
+			return false
+		}
+
+		return backtrack(pos+1, n+1, total+A[pos]) || backtrack(pos+1, n, total)
+	}
+
+	return backtrack(0, 0, 0)
+}
+
+// getIndexsOfMinInts get the indexs of all minium integer
+func getIndexsOfMinInts(x ...int) []int {
+
+	min := x[0]
+	inds := []int{0}
+	for i := 1; i < len(x); i++ {
+		if x[i] < min {
+			min = x[i]
+			inds = []int{i}
+		} else if x[i] == min {
+			inds = append(inds, i)
+		}
+	}
+	return inds
+}
+
+func sort3Ints(nums []int) {
+	if nums[0] > nums[1] {
+		nums[0], nums[1] = nums[1], nums[0]
+	}
+	if nums[1] > nums[2] {
+		nums[1], nums[2] = nums[2], nums[1]
+	}
+}
+func nthUglyNumber(n int, a int, b int, c int) int {
+	var ret int
+	ori := []int{a, b, c}
+	nums := []int{a, b, c}
+
+	for n > 0 {
+		inds := getIndexsOfMinInts(nums...)
+		ret = nums[inds[0]]
+		for _, v := range inds {
+			nums[v] += ori[v]
+		}
+		n--
+	}
+
+	return ret
+}
+
+func plusOne(digits []int) []int {
+	ind := len(digits) - 1
+	for ind >= 0 && digits[ind] == 9 {
+		digits[ind] = 0
+		ind--
+	}
+	if ind == -1 {
+		digits = append([]int{1}, digits...)
+		return digits
+	}
+
+	digits[ind]++
+
+	return digits
+}
+
+func setZeroes(matrix [][]int) {
+	rows := make([]int, 0)
+	cols := make([]int, 0)
+
+	for i := 0; i < len(matrix); i++ {
+		for k := 0; k < len(matrix[0]); k++ {
+			if matrix[i][k] == 0 {
+				rows = append(rows, i)
+				cols = append(cols, k)
+			}
+		}
+	}
+
+	for _, v := range rows {
+		for i := 0; i < len(matrix[0]); i++ {
+			matrix[v][i] = 0
+		}
+	}
+
+	for _, v := range cols {
+		for i := 0; i < len(matrix); i++ {
+			matrix[i][v] = 0
+		}
+	}
+
+}
+
+func numDecodings(s string) int {
+
+	if s[0] == '0' {
+		return 0
+	}
+	// 应该使用动态规划,dp[i]表示以s[i-1]结尾的解码方式的个数
+	dp := make([]int, len(s)+1)
+	dp[0] = 1
+	dp[1] = 1
+
+	for i := 1; i < len(s); i++ {
+		if s[i] == '0' {
+			if s[i-1] != '1' && s[i-1] != '2' {
+				return 0
+			}
+			dp[i+1] = dp[i-1]
+		} else if s[i-1] == '0' {
+			dp[i+1] = dp[i]
+		} else {
+			v, _ := strconv.Atoi(s[i-1 : i+1])
+			if v > 26 {
+				dp[i+1] = dp[i]
+			} else {
+				dp[i+1] = dp[i] + dp[i-1]
+			}
+		}
+	}
+
+	return dp[len(s)]
+}
+
+// 按照先序遍历的方式将二叉树转化为链表形式
+func flatten(root *TreeNode) {
+	if root == nil {
+		return
+	}
+	pre := &TreeNode{} // 相当于头结点
+	lst := list.New()
+	lst.PushFront(root)
+
+	for lst.Len() > 0 {
+		node := lst.Front().Value.(*TreeNode)
+		lst.Remove(lst.Front())
+
+		if node.Right != nil {
+			lst.PushFront(node.Right)
+		}
+		if node.Left != nil {
+			lst.PushFront(node.Left)
+		}
+
+		node.Left = nil
+		pre.Right = node
+		pre = node
+	}
+}
+func smallestSubsequence(s string) string {
+	// 使用栈，当字符s[i]小于栈顶字符，并且s[i]之后还有和栈顶相同的字符，则弹出栈顶元素，压入s[i]
+	contain := make([]int, 26)
+	count := make([]int, 26)
+	for i := 0; i < len(s); i++ {
+		ind := s[i] - 'a'
+		count[ind]++
+	}
+
+	lst := list.New()
+	lst.PushBack(byte('a')) // 哨兵
+	for i := 0; i < len(s); i++ {
+		count[s[i]-'a']--
+		if contain[s[i]-'a'] != 0 {
+			continue
+		}
+		top := lst.Back().Value.(byte)
+		for s[i] < top && count[top-'a'] > 0 {
+			lst.Remove(lst.Back())
+			contain[top-'a'] = 0
+			top = lst.Back().Value.(byte)
+		}
+		lst.PushBack(s[i])
+		contain[s[i]-'a']++
+	}
+
+	ret := make([]byte, lst.Len()-1)
+	for i := len(ret) - 1; i >= 0; i-- {
+		c := lst.Back().Value.(byte)
+		ret[i] = c
+		lst.Remove(lst.Back())
+	}
+	return string(ret)
+}
+
+func main() {
+	fmt.Println(smallestSubsequence("bcbcababa"))
 }

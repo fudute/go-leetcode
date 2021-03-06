@@ -28,3 +28,7 @@ func Test_findNthDigit(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkMap(b *testing.B) {
+
+}
