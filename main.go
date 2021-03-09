@@ -2118,6 +2118,186 @@ func smallestSubsequence(s string) string {
 	return string(ret)
 }
 
+func nextGreaterElements(nums []int) []int {
+	ret := make([]int, len(nums))
+	for i := 0; i < len(ret); i++ {
+		ret[i] = -1
+	}
+
+	// 其中存储的是数组下标
+	mono := make([]int, 0)
+
+	for i := 0; i < len(nums)*2; i++ {
+		ind := i % len(nums)
+
+		for len(mono) != 0 && nums[mono[len(mono)-1]] < nums[ind] {
+			ret[mono[len(mono)-1]] = nums[ind]
+			mono = mono[0 : len(mono)-1]
+		}
+		mono = append(mono, ind)
+	}
+
+	return ret
+}
+
+func constructMaximumBinaryTree(nums []int) *TreeNode {
+	if len(nums) == 0 {
+		return nil
+	}
+	max, ind := 0, 0
+	for i := 0; i < len(nums); i++ {
+		if nums[i] > max {
+			max = nums[i]
+			ind = i
+		}
+	}
+
+	root := &TreeNode{
+		Val:   max,
+		Left:  constructMaximumBinaryTree(nums[:ind]),
+		Right: constructMaximumBinaryTree(nums[ind+1:]),
+	}
+	return root
+}
+
+func isPowerOfTwo(n int) bool {
+	if n < 0 {
+		return false
+	}
+	x := 1
+	for i := 0; i < 32; i++ {
+		if x == n {
+			return true
+		}
+		x = x << 1
+	}
+	return false
+}
+
+func prisonAfterNDays(cells []int, n int) []int {
+	var c uint8
+	for i := 0; i < len(cells); i++ {
+		c = c<<1 + uint8(cells[i])
+	}
+
+	count := make([]int, 256)
+	for i := 0; i < len(count); i++ {
+		count[i] = -1
+	}
+	count[c] = 0
+	// 变化的过程会很快形成一个周期
+	for i := 1; i <= n; i++ {
+		left := c >> 1
+		right := c << 1
+		c = ^(left ^ right)
+		c = c & 0xfe // 最后一位清零
+		c = c & 0x7f // 第一位清零
+
+		if count[c] != -1 {
+			// 这时候周期就是i-count[c]，然后令n等于 (n-i)%(i-count[c])，i等于0，，直接跳到最后一个循环
+			n = (n - i) % (i - count[c])
+			for i := 1; i <= n; i++ {
+				left := c >> 1
+				right := c << 1
+				c = ^(left ^ right)
+				c = c & 0xfe // 最后一位清零
+				c = c & 0x7f // 第一位清零
+			}
+			break
+		} else {
+			count[c] = i
+		}
+	}
+
+	for i := len(cells) - 1; i >= 0; i-- {
+		cells[i] = int(c & 0x01)
+		c = c >> 1
+	}
+	return cells
+}
+
+// 给每一个节点一个编号（满二叉树中，按照从上到下从左到右编号）
+// 如果当前节点的编号和遍历的节点个数不匹配，说明不是完全二叉树
+func isCompleteTree(root *TreeNode) bool {
+
+	count := 0
+
+	lst := list.New()
+
+	root.Val = 0 // 节点的val用来保存层数
+	lst.PushBack(root)
+
+	for lst.Len() > 0 {
+		node := lst.Front().Value.(*TreeNode)
+		lst.Remove(lst.Front())
+		if node.Val != count {
+			return false
+		}
+		count++
+		if node.Left != nil {
+			node.Left.Val = 2*node.Val + 1
+			lst.PushBack(node.Left)
+		}
+		if node.Right != nil {
+			node.Right.Val = 2*node.Val + 2
+			lst.PushBack(node.Right)
+		}
+	}
+	return true
+}
+
+func countPairs(root *TreeNode, distance int) int {
+
+	ret := 0
+	// 遍历函数，返回当前节点node的所有子节点中的叶子节点到当前节点的距离和个数 map[距离]个数
+	// 如果node是叶子节点，则返回{0:1},距离为0，个数为1
+	var dfs func(node *TreeNode) map[int]int
+
+	dfs = func(node *TreeNode) map[int]int {
+		m := make(map[int]int)
+		if node == nil {
+			return m
+		}
+		if node.Left == nil && node.Right == nil {
+			m[0] = 1
+			return m
+		}
+
+		left := dfs(node.Left)
+		right := dfs(node.Right)
+
+		// 对于left和right中的所有组合，如果相加距离小于给定值，则ret += vl * vr
+		for kl, vl := range left {
+			for kr, vr := range right {
+				if kl+kr+2 <= distance {
+					ret += vl * vr
+				}
+			}
+		}
+
+		for k, v := range left {
+			// 距离过远的节点之后就不可能组成节点对了，所以可以直接不返回
+			if k+2 <= distance {
+				m[k+1] += v
+			}
+		}
+		for k, v := range right {
+			if k+2 <= distance {
+				m[k+1] += v
+			}
+		}
+		return m
+	}
+
+	dfs(root)
+	return ret
+}
+
 func main() {
-	fmt.Println(smallestSubsequence("bcbcababa"))
+	m := make(map[int]int)
+	m[1] = 2
+
+	for _, v := range m {
+		fmt.Println(v)
+	}
 }
