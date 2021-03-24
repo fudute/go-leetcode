@@ -2293,11 +2293,471 @@ func countPairs(root *TreeNode, distance int) int {
 	return ret
 }
 
-func main() {
-	m := make(map[int]int)
-	m[1] = 2
+// 计算sqrt（2） 精确到小数点后十位
+func sqrt2() float64 {
+	var low, high float64 = 0, 2
 
-	for _, v := range m {
-		fmt.Println(v)
+	mid := (low + high) / 2
+
+	for math.Abs(mid*mid-2) > 1e-10 {
+		if mid*mid > 2 {
+			high = mid
+		} else {
+			low = mid
+		}
+		mid = (low + high) / 2
 	}
+	return float64(int64(math.Round(mid*1e10))) / 1e10
+}
+
+func findSingleNum(nums []int) int {
+	var ret int
+
+	for i := 0; i < len(nums); i++ {
+		ret = ret ^ nums[i]
+	}
+	return ret
+}
+
+func findTwoSingalNum(nums []int) (int, int) {
+	var res int
+	for i := 0; i < len(nums); i++ {
+		res = res ^ nums[i]
+	}
+
+	// 如果res中第shift位1，则将nums中的数按照shift位为0还是1进行划分为nums1,nums2，
+	// 然后返回findSingleNum(nums1)和findSingleNum(nums2)
+	shift := 1
+	for res&shift == 0 {
+		shift = shift << 1
+	}
+
+	var nums1, nums2 []int
+
+	for i := 0; i < len(nums); i++ {
+		if nums[i]&shift == 1 {
+			nums1 = append(nums1, nums[i])
+		} else {
+			nums2 = append(nums2, nums[i])
+		}
+	}
+	return findSingleNum(nums1), findSingleNum(nums2)
+}
+
+func countAndSay(n int) string {
+	if n == 1 {
+		return "1"
+	}
+
+	str := countAndSay(n - 1)
+
+	ret := make([]byte, 0)
+
+	v := str[0]
+	c := 1
+
+	for i := 1; i < len(str); i++ {
+		if str[i] == v {
+			c++
+		} else {
+			ret = strconv.AppendInt(ret, int64(c), 10)
+			ret = append(ret, v)
+
+			v = str[i]
+			c = 1
+		}
+	}
+	ret = strconv.AppendInt(ret, int64(c), 10)
+	ret = append(ret, v)
+
+	return string(ret)
+}
+
+func firstMissingPositive(nums []int) int {
+
+	n := len(nums)
+	buf := make([]int, n+1)
+
+	for i := 0; i < len(nums); i++ {
+		if nums[i] >= 0 && nums[i] <= n {
+			buf[nums[i]] = 1
+		}
+	}
+
+	for i := 0; i < n+1; i++ {
+		if buf[i] == 0 {
+			return i
+		}
+	}
+	return n + 1
+}
+
+func reverseBetween(head *ListNode, left int, right int) *ListNode {
+
+	ret := &ListNode{
+		Next: head,
+	}
+
+	start := ret
+
+	for i := 0; i < left-1; i++ {
+		start = start.Next
+	}
+
+	p := start.Next
+
+	for i := 1; i < right-left+1; i++ {
+
+		tmp := p.Next
+
+		p.Next = p.Next.Next
+
+		tmp.Next = start.Next
+		start.Next = tmp
+
+	}
+
+	return ret.Next
+}
+
+func cuttingRope(n int) int {
+	if n == 0 {
+		return 0
+	}
+	if n <= 2 {
+		return 1
+	}
+	// dp[i]表示长度为i的绳子的最大乘积
+	dp := make([]int, n+1)
+
+	dp[1] = 1
+	dp[2] = 1
+	for i := 3; i <= n; i++ {
+		for j := 2; j < i; j++ {
+			if dp[i-j]*j > dp[i] {
+				dp[i] = dp[i-j] * j
+			}
+
+			if (i-j)*j > dp[i] {
+				dp[i] = (i - j) * j
+			}
+		}
+	}
+
+	return dp[n]
+}
+
+// 最长递增路径，使用bfs + 动态规划解决
+func longestIncreasingPath(matrix [][]int) int {
+	m := len(matrix)
+	if m == 0 {
+		return 0
+	}
+	n := len(matrix[0])
+
+	dp := make([][]int, m)
+	for i := 0; i < m; i++ {
+		dp[i] = make([]int, n)
+	}
+
+	var ret int
+
+	var bfs func(matrix [][]int, x, y int)
+
+	dirX := []int{-1, 0, 1, 0}
+	dirY := []int{0, 1, 0, -1}
+	bfs = func(matrix [][]int, x, y int) {
+
+		if dp[x][y] != 0 {
+			return
+		}
+
+		for i := 0; i < len(dirX); i++ {
+			nx := x + dirX[i]
+			ny := y + dirY[i]
+
+			// 只往较大的方向扩展
+			if nx >= 0 && nx < m && ny >= 0 && ny < n && matrix[x][y] < matrix[nx][ny] {
+				bfs(matrix, nx, ny)
+				if dp[x][y] < dp[nx][ny]+1 {
+					dp[x][y] = dp[nx][ny] + 1
+
+				}
+			}
+		}
+
+		// 周围没有比他更小的了，设置为1
+		if dp[x][y] == 0 {
+			dp[x][y] = 1
+		}
+	}
+
+	for i := 0; i < m; i++ {
+		for j := 0; j < n; j++ {
+			bfs(matrix, i, j)
+			if dp[i][j] > ret {
+				ret = dp[i][j]
+			}
+		}
+	}
+
+	return ret
+}
+
+func dominantIndex(nums []int) int {
+	first, second := nums[0], 0
+	ret := 0
+	for i := 1; i < len(nums); i++ {
+		if nums[i] > first {
+			ret = i
+			second = first
+			first = nums[i]
+		} else if nums[i] > second {
+			second = nums[i]
+		}
+	}
+
+	if first >= second*2 {
+		return ret
+	}
+	return -1
+}
+
+// 返回线段到点的最短距离
+//  竖直向上direction = true，水平向右 direction = false
+func distanceFromPointToSegment(x0, y0, x1, y1, length float64, direction bool) float64 {
+	if direction {
+		if y0 < y1 || y0 > y1+length {
+			return math.Min(
+				math.Sqrt((x0-x1)*(x0-x1)+(y0-y1)*(y0-y1)),
+				math.Sqrt((x0-x1)*(x0-x1)+(y0-y1-length)*(y0-y1-length)),
+			)
+		} else {
+			return math.Abs(x0 - x1)
+		}
+	} else {
+		if x0 < x1 || x0 > x1+length {
+			return math.Min(
+				math.Sqrt((x0-x1)*(x0-x1)+(y0-y1)*(y0-y1)),
+				math.Sqrt((x0-x1-length)*(x0-x1-length)+(y0-y1)*(y0-y1)),
+			)
+		} else {
+			return math.Abs(y0 - y1)
+		}
+	}
+}
+func checkOverlap(radius int, x_center int, y_center int, x1 int, y1 int, x2 int, y2 int) bool {
+
+	fradius, fxc, fyc, fx1, fy1, fx2, fy2 := float64(radius), float64(x_center), float64(y_center),
+		float64(x1), float64(y1), float64(x2), float64(y2)
+
+	dl := distanceFromPointToSegment(fxc, fyc, fx1, fy1, fy2-fy1, true)
+	dr := distanceFromPointToSegment(fxc, fyc, fx2, fy1, fy2-fy1, true)
+
+	du := distanceFromPointToSegment(fxc, fyc, fx1, fy2, fx2-fx1, false)
+	dd := distanceFromPointToSegment(fxc, fyc, fx1, fy1, fx2-fx1, false)
+
+	if dl <= fradius || dr <= fradius || du <= fradius || dd <= fradius {
+		return true
+	}
+
+	// 圆心在矩形里面
+	if x_center >= x1 && x_center <= x2 && y_center >= y1 && y_center <= y2 {
+		return true
+	}
+
+	return false
+}
+
+func combine(n int, k int) [][]int {
+
+	ret := [][]int{}
+	if k == 0 {
+		return [][]int{{}}
+	}
+	if n == k {
+		ret = append(ret, []int{})
+		for i := 1; i <= n; i++ {
+			ret[0] = append(ret[0], i)
+		}
+		return ret
+	}
+
+	pick := combine(n-1, k-1)
+	nopick := combine(n-1, k)
+
+	for i := 0; i < len(pick); i++ {
+		pick[i] = append(pick[i], n)
+	}
+
+	ret = append(ret, pick...)
+	ret = append(ret, nopick...)
+	return ret
+}
+
+/**
+ *
+ * @param x int整型
+ * @return int整型
+ */
+func sqrt(x int) int {
+	low, high := 1, x
+	for low < high-1 {
+		mid := (low + high) / 2
+		if mid*mid == x {
+			return mid
+		} else if mid*mid < x {
+			low = mid
+		} else {
+			high = mid
+		}
+	}
+	return low
+}
+
+func buildTree(preorder []int, inorder []int) *TreeNode {
+
+	if len(preorder) == 0 {
+		return nil
+	}
+
+	root := &TreeNode{
+		Val: preorder[0],
+	}
+	if len(preorder) == 1 {
+		return root
+	}
+	find := func(nums []int, target int) int {
+		for i := 0; i < len(nums); i++ {
+			if nums[i] == target {
+				return i
+			}
+		}
+
+		return -1
+	}
+
+	pos := find(inorder, preorder[0])
+
+	root.Left = buildTree(preorder[1:1+pos], inorder[:pos])
+	root.Right = buildTree(preorder[1+pos:], inorder[pos+1:])
+	return root
+}
+
+// 仅仅保留不重复的元素
+func deleteDuplicates(head *ListNode) *ListNode {
+	ret := &ListNode{
+		Next: head,
+	}
+
+	pre, p := ret, ret.Next
+
+	for p != nil {
+		for p.Val == p.Next.Val {
+			p = p.Next
+		}
+		if p.Next != p {
+			pre.Next = p.Next
+		} else {
+			pre = p
+			p = p.Next
+		}
+	}
+
+	return ret.Next
+}
+
+// 接雨水
+// 对于位置i，它能接的雨水的最大数量取决于向左看（包括自己）的最大值lMax，向右看的最大值rMax，接的雨水量问 max(min(lMax, rMax) - height[i], 0)
+func trap(height []int) int {
+	top := make([]int, len(height))
+	stack := []int{}
+
+	for i := 0; i < len(height); i++ {
+		for len(stack) > 0 && stack[len(stack)-1] < height[i] {
+			stack = stack[:len(stack)-1]
+		}
+		stack = append(stack, height[i])
+		top[i] = stack[0]
+	}
+
+	stack = []int{}
+
+	for i := len(height) - 1; i >= 0; i-- {
+		for len(stack) > 0 && stack[len(stack)-1] < height[i] {
+			stack = stack[:len(stack)-1]
+		}
+		stack = append(stack, height[i])
+
+		if stack[0] < top[i] {
+			top[i] = stack[0]
+		}
+	}
+
+	ret := 0
+	for i := 0; i < len(height); i++ {
+		ret += top[i] - height[i]
+	}
+
+	return ret
+}
+
+// 440. 字典序的第K小数字
+// 解题方式，构建字典树，将数字一次插入字典树中，然后按顺序遍历到第k个
+func findKthNumber(n int, k int) int {
+
+	words := make([]*trieNode, 10)
+
+	for i := 1; i <= n; i++ {
+		str := strconv.Itoa(i)
+		cur := words
+		for j := 0; j < len(str); j++ {
+			if cur[str[j]-'0'] == nil {
+				cur[str[j]-'0'] = &trieNode{
+					next: make([]*trieNode, 10),
+				}
+			}
+			if j == len(str)-1 {
+				cur[str[j]-'0'].val = i
+				break
+			}
+			cur = cur[str[j]-'0'].next
+
+		}
+	}
+
+	// 遍历字典树，返回第k个元素
+	lst := list.New()
+	for i := 0; i < len(words); i++ {
+		if words[i] != nil {
+			lst.PushBack(words[i])
+		}
+	}
+	for lst.Len() > 0 {
+		node := lst.Front().Value.(*trieNode)
+		lst.Remove(lst.Front())
+		if node.val != 0 {
+			k--
+		}
+		if k == 0 {
+			return node.val
+		}
+
+		for i := 0; i < len(node.next); i++ {
+			if node.next[i] != nil {
+				lst.PushBack(node.next[i])
+			}
+		}
+	}
+
+	return 0
+}
+
+type trieNode struct {
+	next []*trieNode
+	val  int
+}
+
+func main() {
+	fmt.Println(findKthNumber(13, 2))
 }
