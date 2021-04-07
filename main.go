@@ -2758,6 +2758,232 @@ type trieNode struct {
 	val  int
 }
 
+func reverseBits(num uint32) uint32 {
+	var ret uint32
+
+	for i := 0; i < 32; i++ {
+		ret = (ret<<1 | (num & 1))
+		num = num >> 1
+	}
+
+	return ret
+}
+
+func isMatch(s string, p string) bool {
+
+	if len(s) == 0 {
+		return emptiable(p)
+	}
+
+	if len(p) == 0 {
+		return len(s) == 0
+	}
+
+	if len(p) == 1 {
+		return len(s) == 1 && (s[0] == p[0] || p[0] == '.')
+	}
+
+	if p[1] != '*' {
+		if s[0] == p[0] || p[0] == '.' {
+			return isMatch(s[1:], p[1:])
+		} else {
+			return false
+		}
+	} else {
+		for repeat := 0; repeat <= len(s) && (repeat == 0 || s[repeat-1] == p[0] || p[0] == '.'); repeat++ {
+			if isMatch(s[repeat:], p[2:]) {
+				return true
+			}
+		}
+		return false
+	}
+}
+
+func emptiable(p string) bool {
+	return p == "" || (len(p) >= 2 && p[1] == '*' && emptiable(p[2:]))
+}
+
+func searchMatrix(matrix [][]int, target int) bool {
+	// 首先以行为单位，进行二分查找确定某一行，然后在那一行上进行二分查找确定一个数
+	m, n := len(matrix), len(matrix[0])
+
+	rl, rh := 0, m-1
+
+	for rl < rh {
+		mid := (rl + rh) / 2
+		if matrix[mid][n-1] == target {
+			return true
+		}
+		if matrix[mid][n-1] > target {
+			rh = mid
+		} else {
+			rl = mid + 1
+		}
+	}
+
+	// 现在target一定在rh那一行上
+
+	low, high := 0, n-1
+
+	for low <= high {
+		mid := (low + high) / 2
+		if matrix[rh][mid] == target {
+			return true
+		}
+		if matrix[rh][mid] > target {
+			high = mid - 1
+		} else {
+			low = mid + 1
+		}
+	}
+
+	return false
+}
+
+func subsetsWithDup(nums []int) [][]int {
+	sort.Ints(nums)
+
+	var ret [][]int
+
+	var dfs func(pos int, output []int)
+
+	dfs = func(pos int, output []int) {
+
+		if pos == len(nums) {
+			tmp := make([]int, len(output))
+			copy(tmp, output)
+			ret = append(ret, tmp)
+		} else {
+			// 包含当前数字
+			output = append(output, nums[pos])
+			dfs(pos+1, output)
+			output = output[:len(output)-1]
+
+			// 不包含当前数字
+			pos++
+			for pos < len(nums) && nums[pos] == nums[pos-1] {
+				pos++
+			}
+			dfs(pos, output)
+		}
+	}
+
+	dfs(0, []int{})
+
+	return ret
+}
+
+func clumsy(N int) int {
+	return 0
+}
+
+func longestCommonSubsequence(text1 string, text2 string) int {
+	m := len(text1)
+	if m == 0 {
+		return 0
+	}
+	n := len(text2)
+
+	dp := make([][]int, m+1)
+
+	for i := 0; i < m+1; i++ {
+		dp[i] = make([]int, n+1)
+	}
+
+	for i := 1; i < m+1; i++ {
+		for j := 1; j < n+1; j++ {
+			if text1[i-1] == text2[j-1] {
+				dp[i][j] = dp[i-1][j-1] + 1
+			} else if dp[i][j-1] > dp[i-1][j] {
+				dp[i][j] = dp[i][j-1]
+			} else {
+				dp[i][j] = dp[i-1][j]
+			}
+		}
+	}
+
+	return dp[m][n]
+}
+
+func removeDuplicates(nums []int) int {
+
+	count := 1
+	val := nums[0]
+	for i := 1; i < len(nums); i++ {
+		if nums[i] == val {
+			count++
+			if count > 2 {
+				nums[i] -= count
+			}
+		} else {
+			count = 1
+			val = nums[i]
+		}
+	}
+
+	p := 1
+	for i := 1; i < len(nums); i++ {
+		if nums[i] >= nums[i-1] {
+			nums[p] = nums[i]
+			p++
+		}
+	}
+
+	return p
+}
+
+func findLeastNumOfUniqueInts(arr []int, k int) int {
+	m := make(map[int]int)
+	for i := 0; i < len(arr); i++ {
+		m[arr[i]]++
+	}
+
+	sort.Slice(arr, func(i, j int) bool {
+		if m[arr[i]] != m[arr[j]] {
+			return m[arr[i]] < m[arr[j]]
+		} else {
+			return arr[i] < arr[j]
+		}
+	})
+
+	count := 0
+	for i := k; i < len(arr); i++ {
+		if i == k || arr[i] != arr[i-1] {
+			count++
+		}
+	}
+
+	return count
+}
+
+func search(nums []int, target int) bool {
+	// 找到分界点，然后在左右两部分分别二分查找？
+	ind := sort.Search(len(nums), func(i int) bool {
+		if i == 0 {
+			return false
+		}
+		return nums[i] <= nums[0]
+	})
+
+	var i int
+	left := nums[:ind]
+	right := nums[ind:]
+
+	i = sort.SearchInts(left, target)
+	if i != len(left) && left[i] == target {
+		return true
+	}
+
+	i = sort.SearchInts(right, target)
+	if i != len(right) && right[i] == target {
+		return true
+	}
+	return false
+}
 func main() {
-	fmt.Println(findKthNumber(13, 2))
+	nums := []int{2, 5, 6, 0, 0, 1, 2}
+
+	exits := search(nums, 2)
+
+	fmt.Println(exits)
 }
