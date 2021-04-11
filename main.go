@@ -365,11 +365,14 @@ func lengthOfLongestSubstring(s string) int {
 	return ret
 }
 
-func min(lhs, rhs int) int {
-	if lhs < rhs {
-		return lhs
+func min(nums ...int) int {
+	ret := math.MaxInt64
+	for i := 0; i < len(nums); i++ {
+		if nums[i] < ret {
+			ret = nums[i]
+		}
 	}
-	return rhs
+	return ret
 }
 func maxArea(height []int) int {
 	left, right := 0, len(height)-1
@@ -2980,10 +2983,113 @@ func search(nums []int, target int) bool {
 	}
 	return false
 }
+
+func findMin(nums []int) int {
+	// 右半部分的最大值要小于等于左半部分的最小值
+	left, right := 0, len(nums)-1
+	if nums[left] < nums[right] { // 说明没有旋转
+		return nums[0]
+	}
+	// 第一步：在右半部分找到第一个小于nums[left]的数
+	for left < right && nums[left] == nums[right] && nums[right] >= nums[right-1] {
+		right--
+	}
+
+	for left < right-1 {
+		mid := (left + right) / 2
+		if nums[mid] >= nums[left] { // 说明在左半部分
+			left = mid
+		} else { // 在右半部分
+			right = mid
+		}
+	}
+
+	return nums[right]
+}
+
+func scoreOfParentheses(S string) int {
+	// 设计一个栈，
+	// 当遇到左括号时，压入0
+	// 遇到右括号时，如果栈顶是0，则弹出栈顶，然后栈顶元素加一
+	// 如果栈顶不是0，设为x，则弹出栈顶，然后栈顶元素加 2x
+
+	stack := make([]int, 1) // 遍历完成后，剩下的元素就是最终的结果
+
+	for _, c := range S {
+		if c == '(' {
+			stack = append(stack, 0)
+		} else {
+			x := stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+			if x == 0 {
+				stack[len(stack)-1] += 1
+			} else {
+				stack[len(stack)-1] += x + x
+			}
+		}
+	}
+	return stack[0]
+}
+
+func findTheWinner(n int, k int) int {
+	if k == 1 {
+		return n
+	}
+	next := make([]int, n)
+	for i := 0; i < len(next); i++ {
+		next[i] = (i + 1) % n
+	}
+
+	p := 0
+	for i := 0; i < n-1; i++ {
+		for j := 0; j < k-2; j++ {
+			p = next[p]
+		}
+		next[p] = next[next[p]]
+		p = next[p]
+	}
+
+	return next[p] + 1
+}
+
+func minSideJumps(obstacles []int) int {
+	// 贪心选择策略，每次侧跳选择障碍物距离最远的那条路
+
+	var getNext func(r1, r2, i int) (int, int) = func(r1, r2, i int) (int, int) {
+		l1, l2 := 0, 0
+
+		for l1 = 0; l1 < len(obstacles)-i && obstacles[i+l1] != r1; l1++ {
+
+		}
+		for l2 = 0; l2 < len(obstacles)-i && obstacles[i+l2] != r2; l2++ {
+
+		}
+		if l1 > l2 {
+			return r1, i + l1
+		}
+		return r2, i + l2
+	}
+
+	ret := 0
+	cur := 2
+	for i := 0; i < len(obstacles)-1; i++ {
+		if obstacles[i+1] == cur { // 遇到障碍物
+			if obstacles[i] != 0 {
+				cur = 6 - cur - obstacles[i]
+			} else if obstacles[i+1] == 1 {
+				cur, i = getNext(2, 3, i)
+			} else if obstacles[i+1] == 2 {
+				cur, i = getNext(1, 3, i)
+			} else {
+				cur, i = getNext(1, 2, i)
+			}
+			ret++
+		}
+	}
+	return ret
+}
+
 func main() {
-	nums := []int{2, 5, 6, 0, 0, 1, 2}
-
-	exits := search(nums, 2)
-
-	fmt.Println(exits)
+	obstacles := []int{0, 1, 2, 3, 0}
+	fmt.Println(minSideJumps(obstacles))
 }
