@@ -58,3 +58,18 @@ func (t *Trie) Find(word string) bool {
 	}
 	return false
 }
+
+func (t *Trie) Prefix(prefix string) bool {
+	prefix = strings.ToLower(prefix)
+
+	curNodes := t.words
+
+	for i := 0; i < len(prefix); i++ {
+		ind := prefix[i] - 'a'
+		if curNodes[ind] == nil {
+			return false
+		}
+		curNodes = curNodes[ind].next
+	}
+	return true
+}

@@ -24,6 +24,8 @@ type TreeNode struct {
 	Right *TreeNode
 }
 
+const Mod int = 1e9 + 7
+
 func reverseList(head *ListNode) *ListNode {
 	var ret *ListNode
 	p := head
@@ -3089,7 +3091,210 @@ func minSideJumps(obstacles []int) int {
 	return ret
 }
 
+func largestNumber(nums []int) string {
+	strs := make([]string, len(nums))
+
+	var ret strings.Builder
+
+	for i := 0; i < len(nums); i++ {
+		strs[i] = strconv.FormatInt(int64(nums[i]), 10)
+	}
+
+	sort.Slice(strs, func(i, j int) bool {
+		return strs[i]+strs[j] < strs[j]+strs[i]
+	})
+
+	for i := len(strs) - 1; i >= 0; i-- {
+		ret.WriteString(strs[i])
+	}
+
+	str := strings.TrimLeft(ret.String(), "0")
+
+	if len(str) == 0 {
+		return "0"
+	}
+	return str
+}
+
+func minDiffInBST(root *TreeNode) int {
+
+	ret := math.MaxInt32
+	pre := math.MinInt32
+
+	var inOrder func(node *TreeNode)
+
+	inOrder = func(node *TreeNode) {
+		if node == nil {
+			return
+		}
+
+		inOrder(node.Left)
+
+		if node.Val-pre < ret {
+			ret = node.Val - pre
+		}
+		pre = node.Val
+
+		inOrder(node.Right)
+	}
+
+	inOrder(root)
+
+	return ret
+}
+
+func oddEvenList(head *ListNode) *ListNode {
+	odd := &ListNode{}
+	even := &ListNode{}
+
+	p, po, pe := head, odd, even
+	i := 0
+	for p != nil {
+		if i%2 == 0 {
+			pe.Next = p
+			pe = pe.Next
+		} else {
+			po.Next = p
+			po = po.Next
+		}
+		i++
+		p = p.Next
+	}
+
+	pe.Next = odd.Next
+	po.Next = nil
+	return even.Next
+}
+
+// 找递增子序列
+func findSubsequences(nums []int) [][]int {
+	// dp[i] 表示以 nums[i] 结尾的递增子序列
+	dp := make([][][]int, len(nums))
+
+	dp[0] = [][]int{{nums[0]}}
+	for i := 1; i < len(nums); i++ {
+		for j := i - 1; j >= 0; j-- {
+			if nums[i] >= nums[j] {
+				preLen := len(dp[i])
+				dp[i] = append(dp[i], dp[j]...)
+				for k := preLen; k < len(dp[i]); k++ {
+					dp[i][k] = append(dp[i][k], nums[i])
+				}
+			}
+		}
+	}
+
+	ret := make([][]int, 0)
+
+	for i := 0; i < len(dp); i++ {
+		ret = append(ret, dp[i]...)
+	}
+
+	return ret[1:]
+}
+
+func rob(nums []int) int {
+	if len(nums) == 1 {
+		return nums[0]
+	}
+
+	var noCircleRob = func(nums []int) int {
+
+		if len(nums) == 0 {
+			return 0
+		}
+		if len(nums) == 1 {
+			return nums[1]
+		}
+		dp := make([]int, len(nums))
+
+		dp[0] = nums[0]
+		if nums[0] > nums[1] {
+			dp[1] = nums[0]
+		} else {
+			dp[1] = nums[1]
+		}
+
+		for i := 2; i < len(nums); i++ {
+			if dp[i-1] < dp[i-2]+nums[i] {
+				dp[i] = dp[i-2] + nums[i]
+			} else {
+				dp[i] = dp[i-1]
+			}
+		}
+
+		return dp[len(dp)-1]
+	}
+
+	A := noCircleRob(nums[:len(nums)-1])
+	B := noCircleRob(nums[1:])
+
+	if A > B {
+		return A
+	}
+	return B
+}
+
+func isScramble(s1 string, s2 string) bool {
+	// dp1[i,j,k]表示s1[i,i+k] 和s2[j, j+k]是不是scramble
+	type threeInts struct {
+		i, j, k int
+	}
+	m := make(map[threeInts]bool)
+
+	var helper func(i, j, k int) bool
+	helper = func(i, j, k int) bool {
+
+		if val, ok := m[threeInts{i, j, k}]; ok {
+			return val
+		}
+		if k == 1 {
+			m[threeInts{i, j, k}] = s1[i] == s2[i]
+			return s1[i] == s2[j]
+		}
+
+		for ind := 1; ind < k; ind++ {
+			if (helper(i, j, ind) && helper(i+ind, j+ind, k-ind)) ||
+				(helper(i, j+k-ind, ind) && helper(i+ind, j, k-ind)) {
+				m[threeInts{i, j, k}] = true
+				return true
+			}
+		}
+		m[threeInts{i, j, k}] = false
+		return false
+	}
+	return helper(0, 0, len(s1))
+}
+
+func numFactoredBinaryTrees(arr []int) int {
+	m := make(map[int]int)
+	for i := range arr {
+		m[arr[i]] = i
+	}
+	// dp[i] 表示以arr[i]作为根节点的树的个数
+	dp := make([]int, len(arr))
+	for i := range dp {
+		dp[i] = 1
+	}
+	for i := 1; i < len(arr); i++ {
+		for j := 0; j < i; j++ {
+			if arr[i]%arr[j] == 0 {
+				ind, ok := m[arr[i]/arr[j]]
+				if ok {
+					dp[i] += (dp[j] * dp[ind]) % Mod
+				}
+			}
+		}
+	}
+	ret := 0
+	for i := range dp {
+		ret = (ret + dp[i]) % Mod
+	}
+	return ret
+}
+
 func main() {
-	obstacles := []int{0, 1, 2, 3, 0}
-	fmt.Println(minSideJumps(obstacles))
+	fmt.Println(Mod)
+	arr := []int{2, 4, 5, 10}
+	fmt.Println(numFactoredBinaryTrees(arr))
 }
