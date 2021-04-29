@@ -230,30 +230,30 @@ func reverse(s []int) []int {
 	return s
 }
 
-type intPair struct {
-	val   int // val
-	index int // index
-}
+// type intPair struct {
+// 	val   int // val
+// 	index int // index
+// }
 
-// 从后遍历，然后大到下压入栈——单调栈
-func dailyTemperatures(T []int) []int {
-	ret := make([]int, len(T))
-	s := make([]intPair, 0)
-	for i := len(T) - 1; i >= 0; i-- {
-		tmp := len(s) - 1
-		for tmp >= 0 && s[tmp].val <= T[i] {
-			tmp--
-		}
-		s = s[0 : tmp+1]
-		if tmp == -1 {
-			ret[i] = 0
-		} else {
-			ret[i] = s[tmp].index - i
-		}
-		s = append(s, intPair{val: T[i], index: i})
-	}
-	return ret
-}
+// // 从后遍历，然后大到下压入栈——单调栈
+// func dailyTemperatures(T []int) []int {
+// 	ret := make([]int, len(T))
+// 	s := make([]intPair, 0)
+// 	for i := len(T) - 1; i >= 0; i-- {
+// 		tmp := len(s) - 1
+// 		for tmp >= 0 && s[tmp].val <= T[i] {
+// 			tmp--
+// 		}
+// 		s = s[0 : tmp+1]
+// 		if tmp == -1 {
+// 			ret[i] = 0
+// 		} else {
+// 			ret[i] = s[tmp].index - i
+// 		}
+// 		s = append(s, intPair{val: T[i], index: i})
+// 	}
+// 	return ret
+// }
 func deleteNode(node *ListNode) {
 	pre := node
 	for node.Next != nil {
@@ -3293,8 +3293,245 @@ func numFactoredBinaryTrees(arr []int) int {
 	return ret
 }
 
+func maxSumSubmatrix(matrix [][]int, k int) int {
+	m := len(matrix)
+	n := len(matrix[0])
+	subSum := make([][]int, m+1)
+	for i := 0; i < len(subSum); i++ {
+		subSum[i] = make([]int, n+1)
+	}
+
+	for i := 1; i <= m; i++ {
+		for j := 1; j <= n; j++ {
+			subSum[i][j] = subSum[i-1][j] + subSum[i][j-1] + matrix[i-1][j-1] - subSum[i-1][j-1]
+		}
+	}
+
+	ret := math.MinInt64
+	for i := 1; i <= m; i++ {
+		for j := 1; j <= n; j++ {
+			for p := i; p <= m; p++ {
+				for q := j; q <= n; q++ {
+					val := subSum[p][q] - subSum[i-1][q] - subSum[p][j-1] + subSum[i-1][j-1]
+					if val <= k && val > ret {
+						ret = val
+					}
+				}
+			}
+		}
+	}
+
+	return ret
+}
+func combinationSum4(nums []int, target int) int {
+	dp := make([]int, target+1)
+	dp[0] = 1
+	for i := 1; i <= target; i++ {
+		for _, num := range nums {
+			if num <= i {
+				dp[i] += dp[i-num]
+			}
+		}
+	}
+	return dp[target]
+}
+
+// 可以采用二分查找的方式，小于最小值时，没有办法运送完毕，大于最小值时，可以运送完毕，中间的分界点就是需要的结果
+func shipWithinDays(weights []int, D int) int {
+	var low, high int
+	var max int
+	for i := 0; i < len(weights); i++ {
+		high += weights[i]
+		if weights[i] > max {
+			max = weights[i]
+		}
+	}
+	low = max - 1
+	var canShip func(cap int) bool = func(cap int) bool {
+		cur, count := 0, 0
+		for i := 0; i < len(weights); i++ {
+			if cur+weights[i] <= cap {
+				cur += weights[i]
+			} else {
+				count++
+				cur = weights[i]
+			}
+		}
+		return count+1 <= D
+	}
+
+	for low < high-1 {
+		mid := (low + high) / 2
+		if canShip(mid) {
+			high = mid
+		} else {
+			low = mid
+		}
+	}
+
+	return high
+}
+func smallestGoodBase(n string) string {
+
+	return ""
+}
+
+// 层序遍历，计算每一层的宽度
+func widthOfBinaryTree(root *TreeNode) int {
+	ret := 0
+	st1, st2 := []*TreeNode{root}, []*TreeNode{}
+	root.Val = 0
+	for len(st1) > 0 {
+		if st1[len(st1)-1].Val-st1[0].Val > ret {
+			ret = st1[len(st1)-1].Val - st1[0].Val
+		}
+		for len(st1) != 0 {
+			node := st1[0]
+			st1 = st1[1:]
+			if node.Left != nil {
+				node.Left.Val = node.Val*2 + 1
+				st2 = append(st2, node.Left)
+			}
+			if node.Right != nil {
+				node.Right.Val = node.Val*2 + 2
+				st2 = append(st2, node.Right)
+			}
+		}
+
+		st2, st1 = st1, st2
+	}
+	return ret
+}
+
+func judgeSquareSum(c int) bool {
+	left, right := 0, int(math.Sqrt(float64(c)))
+	for left <= right {
+		sum := left*left + right*right
+		if sum == c {
+			return true
+		} else if sum > c {
+			right--
+		} else {
+			left++
+		}
+	}
+	return false
+}
+
+// 采用广度优先遍历的方式
+func allPathsSourceTarget(graph [][]int) [][]int {
+	var ret [][]int
+	n := len(graph)
+
+	var path, visited []int
+	visited = make([]int, n)
+
+	var bfs func(ind int)
+	bfs = func(ind int) {
+		if ind == n-1 {
+			tmp := make([]int, len(path))
+			copy(tmp, path)
+			ret = append(ret, tmp)
+			return
+		}
+		for _, v := range graph[ind] {
+			if visited[v] == 0 {
+				path = append(path, v)
+				visited[v] = 1
+				bfs(v)
+				path = path[:len(path)-1]
+				visited[v] = 0
+			}
+		}
+	}
+
+	path = append(path, 0)
+	visited[0] = 1
+
+	bfs(0)
+	return ret
+}
+
+func busiestServers(k int, arrival []int, load []int) []int {
+
+	type server struct {
+		t      int
+		taskID int
+		count  int
+		id     int
+	}
+	sers := make([]server, k)
+	for i := 0; i < k; i++ {
+		sers[i].taskID = -1
+		sers[i].id = i
+	}
+	for i := 0; i < len(arrival); i++ {
+		for j := 0; j < k; j++ {
+			ind := (i%k + j) % k
+			if sers[ind].taskID == -1 || (arrival[i]-sers[ind].t >= load[sers[ind].taskID]) {
+				sers[ind].count++
+				sers[ind].t = arrival[i]
+				sers[ind].taskID = i
+				break
+			}
+		}
+	}
+
+	sort.Slice(sers, func(i, j int) bool {
+		return sers[i].count > sers[j].count
+	})
+
+	var ret []int
+	for i := 0; i < k; i++ {
+		if i != 0 && sers[i].count != sers[i-1].count {
+			break
+		}
+		ret = append(ret, sers[i].id)
+	}
+	return ret
+}
+
+// 最多走len(stones)步
+func canCross(stones []int) bool {
+	// 0表示未知，1 表示能走到终点，2 表示不能
+	dp := make([][]int, len(stones))
+	for i := 0; i < len(dp); i++ {
+		dp[i] = make([]int, len(stones))
+	}
+	var jump func(ind, k int) bool
+	jump = func(ind, k int) bool {
+		if dp[ind][k] != 0 {
+			return dp[ind][k] == 1
+		}
+		if ind == len(stones)-1 {
+			return true
+		}
+		i := 1
+		var A, B, C bool
+		for ind+i < len(stones) && stones[ind+i]-stones[ind] <= k+1 {
+			if stones[ind+i]-stones[ind] == k-1 {
+				A = jump(ind+i, k-1)
+			} else if stones[ind+i]-stones[ind] == k {
+				B = jump(ind+i, k)
+			} else if stones[ind+i]-stones[ind] == k+1 {
+				C = jump(ind+i, k+1)
+			}
+			i++
+		}
+		if A || B || C {
+			dp[ind][k] = 1
+		} else {
+			dp[ind][k] = 2
+		}
+		return A || B || C
+	}
+	if stones[1]-stones[0] != 1 {
+		return false
+	}
+	return jump(1, 1)
+}
+
 func main() {
-	fmt.Println(Mod)
-	arr := []int{2, 4, 5, 10}
-	fmt.Println(numFactoredBinaryTrees(arr))
+	stones := []int{0, 1, 3, 5, 6, 8, 12, 17}
+	fmt.Println(canCross(stones))
 }
