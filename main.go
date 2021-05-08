@@ -3530,8 +3530,60 @@ func canCross(stones []int) bool {
 	}
 	return jump(1, 1)
 }
+func decode(encoded []int, first int) []int {
+	ret := make([]int, len(encoded)+1)
+	ret[0] = first
+	for i := 1; i < len(ret); i++ {
+		ret[i] = ret[i-1] ^ encoded[i-1]
+	}
+	return ret
+}
+
+// 采用二分的方式,假设最小值为k，那么小于k的时候无法完成工作，大于k的时候可以完成工作
+func minimumTimeRequired(jobs []int, k int) int {
+	var canFinish = func(t int) bool {
+		if jobs[len(jobs)-1] > t {
+			return false
+		}
+		done := make([]bool, len(jobs))
+		count := 0 // 分配出去的任务数
+		for i := 0; i < k; i++ {
+			if count == len(jobs) {
+				return true
+			}
+			// 对于每一个人，需要找到最接近t的任务组合
+			cur := 0 // 当前分配的任务量
+			for i := len(jobs) - 1; i >= 0; i-- {
+				if !done[i] && cur+jobs[i] <= t {
+					done[i] = true
+					cur = cur + jobs[i]
+					count++
+				}
+			}
+		}
+		return count == len(jobs)
+	}
+
+	sort.Ints(jobs)
+
+	sum := 0
+	for i := 0; i < len(jobs); i++ {
+		sum += jobs[i]
+	}
+	low, high := 0, sum
+
+	for low < high-1 {
+		mid := (low + high) / 2
+		if canFinish(mid) {
+			high = mid
+		} else {
+			low = mid
+		}
+	}
+	return high
+}
 
 func main() {
-	stones := []int{0, 1, 3, 5, 6, 8, 12, 17}
-	fmt.Println(canCross(stones))
+	jobs := []int{6518448, 8819833, 7991995, 7454298, 2087579, 380625, 4031400, 2905811, 4901241, 8480231, 7750692, 3544254}
+	fmt.Println(minimumTimeRequired(jobs, 4))
 }
