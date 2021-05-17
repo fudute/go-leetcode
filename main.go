@@ -3583,7 +3583,290 @@ func minimumTimeRequired(jobs []int, k int) int {
 	return high
 }
 
+func leafSimilar(root1 *TreeNode, root2 *TreeNode) bool {
+	var leaf1, leaf2 []int
+	var inOrder func(root *TreeNode, out *[]int)
+	inOrder = func(root *TreeNode, out *[]int) {
+		if root == nil {
+			return
+		}
+		inOrder(root.Left, out)
+		if root.Left == nil && root.Right == nil {
+			*out = append(*out, root.Val)
+		}
+		inOrder(root.Right, out)
+	}
+
+	inOrder(root1, &leaf1)
+	inOrder(root2, &leaf2)
+
+	if len(leaf1) != len(leaf2) {
+		return false
+	}
+	for i := 0; i < len(leaf1); i++ {
+		if leaf1[i] != leaf2[i] {
+			return false
+		}
+	}
+	return true
+}
+func findRadius(houses []int, heaters []int) int {
+
+	check := func(radius int) bool {
+		// j 表示当前house右边第一个heater
+		j := 0
+		for i := 0; i < len(houses); i++ {
+			if houses[i] > heaters[j] {
+				j++
+			}
+			if (j == len(heaters) || houses[i]+radius < heaters[j]) && (j == 0 || houses[i]-radius > heaters[j-1]) {
+				return false
+			}
+		}
+		return true
+	}
+	low, high := 0, houses[len(houses)-1]-houses[0]
+	for low < high-1 {
+		mid := (low + high) / 2
+		if check(mid) {
+			high = mid
+		} else {
+			low = mid
+		}
+	}
+	return high
+}
+func partitionDisjoint(nums []int) int {
+	n := len(nums)
+	// maxLeft[i], minRight[i]分别表示包含num[i]的左边部分的最大值和不包含nums[i]的右边部分最小值
+	maxLeft, minRight := make([]int, n), make([]int, n)
+	curMax, curMin := nums[0], nums[n-1]
+	maxLeft[0] = nums[0]
+	minRight[n-1] = math.MinInt32
+	for i := 1; i < n; i++ {
+		if nums[i] > curMax {
+			curMax = nums[i]
+		}
+		maxLeft[i] = curMax
+
+		if nums[n-i] < curMin {
+			curMin = nums[n-i]
+		}
+		minRight[n-i-1] = curMin
+	}
+	for i := 0; i < n-1; i++ {
+		if maxLeft[i] <= minRight[i] {
+			return i
+		}
+	}
+	return n - 1
+}
+func romanToInt(s string) int {
+	ret := 0
+	romans := map[byte]int{
+		'I': 1,
+		'V': 5,
+		'X': 10,
+		'L': 50,
+		'C': 100,
+		'D': 500,
+		'M': 1000,
+	}
+	for i := 0; i < len(s); i++ {
+		if i == len(s)-1 || romans[s[i]] >= romans[s[i+1]] {
+			ret += romans[s[i]]
+		} else {
+			ret -= romans[s[i]]
+		}
+	}
+	return ret
+}
+func maxNumberOfBalloons(text string) int {
+	var cb, ca, cl, co, cn int
+	for _, c := range text {
+		switch c {
+		case 'b':
+			cb++
+		case 'a':
+			ca++
+		case 'l':
+			cl++
+		case 'o':
+			co++
+		case 'n':
+			cn++
+		}
+	}
+	return min(cb, ca, cl/2, co/2, cn)
+}
+func findMaximumXOR(nums []int) int {
+	x := 0
+
+	var next []int
+
+	for i := 30; i >= 0; i-- {
+		x = 2*x + 1
+		found := false
+		m := map[int]*struct {
+			isAppended bool
+			vals       []int
+		}{}
+		for _, v := range nums {
+			if _, ok := m[v>>i]; !ok {
+				m[v>>i] = &struct {
+					isAppended bool
+					vals       []int
+				}{
+					isAppended: false,
+				}
+			}
+			m[v>>i].vals = append(m[v>>i].vals, v)
+		}
+		for _, v := range nums {
+			tmp := v>>i ^ x
+			if _, ok := m[tmp]; ok {
+				found = true
+				if !m[tmp].isAppended {
+					m[tmp].isAppended = true
+					next = append(next, m[tmp].vals...)
+				}
+			}
+		}
+
+		if found {
+			// 当前位可以为1
+			nums = next
+			next = []int{}
+		} else {
+			// 当前位只能为0
+			x--
+		}
+	}
+	return x
+}
+func monotoneIncreasingDigits(n int) int {
+	s := []byte(strconv.Itoa(n))
+	i := 1
+	for i < len(s) && s[i] >= s[i-1] {
+		i++
+	}
+	if i < len(s) {
+		for i > 0 && s[i] < s[i-1] {
+			s[i-1]--
+			i--
+		}
+		for i++; i < len(s); i++ {
+			s[i] = '9'
+		}
+	}
+	ans, _ := strconv.Atoi(string(s))
+	return ans
+}
+func isCousins(root *TreeNode, x int, y int) bool {
+	if x == y || x == root.Val || y == root.Val {
+		return false
+	}
+
+	pid1, pid2 := -1, -1
+	id1, id2 := -1, -1
+	st1, st2 := make([]*TreeNode, 0), make([]*TreeNode, 0)
+	root.Val = 0
+	found := false
+	st1 = append(st1, root)
+	for !found && len(st1) > 0 {
+		for len(st1) > 0 {
+			node := st1[len(st1)-1]
+			st1 = st1[:len(st1)-1]
+			if node.Left != nil {
+				if node.Left.Val == x {
+					found = true
+					id1 = node.Val*2 + 1
+					pid1 = node.Val
+				} else if node.Left.Val == y {
+					found = true
+					id2 = node.Val*2 + 1
+					pid2 = node.Val
+				}
+				node.Left.Val = node.Val*2 + 1
+				st2 = append(st2, node.Left)
+			}
+
+			if node.Right != nil {
+				if node.Right.Val == x {
+					found = true
+					id1 = node.Val*2 + 2
+					pid1 = node.Val
+				} else if node.Right.Val == y {
+					found = true
+					id2 = node.Val*2 + 2
+					pid2 = node.Val
+				}
+				node.Right.Val = node.Val*2 + 2
+				st2 = append(st2, node.Right)
+			}
+		}
+		st1, st2 = st2, st1
+	}
+
+	if !found || id1 == -1 || id2 == -1 || pid1 == pid2 {
+		return false
+	}
+	return true
+}
+func maxLength(arr []int) int {
+	// write code here
+	var first, second, ret int
+	m := make(map[int]struct{})
+	for first < len(arr) {
+		if _, ok := m[arr[first]]; ok {
+			for arr[second] != arr[first] {
+				second++
+				delete(m, arr[second])
+			}
+			second++
+		} else {
+			m[arr[first]] = struct{}{}
+			if first-second > ret {
+				ret = first - second
+			}
+		}
+		first++
+	}
+	return ret + 1
+}
+func maxWater(arr []int) int64 {
+	// write code here
+	n := len(arr)
+	maxLeft, maxRight := make([]int, n), make([]int, n)
+	st := []int{}
+	for i := 0; i < n; i++ {
+		for len(st) > 0 && st[len(st)-1] < arr[i] {
+			st = st[:len(st)-1]
+		}
+		st = append(st, arr[i])
+		maxLeft[i] = st[0]
+	}
+
+	st = []int{}
+	for i := n - 1; i >= 0; i-- {
+		for len(st) > 0 && st[len(st)-1] < arr[i] {
+			st = st[:len(st)-1]
+		}
+		st = append(st, arr[i])
+		maxRight[i] = st[0]
+	}
+
+	ret := 0
+	for i := 0; i < n; i++ {
+		if maxLeft[i] > maxRight[i] {
+			ret += maxRight[i] - arr[i]
+		} else {
+			ret += maxLeft[i] - arr[i]
+		}
+	}
+	return int64(ret)
+}
+
 func main() {
-	jobs := []int{6518448, 8819833, 7991995, 7454298, 2087579, 380625, 4031400, 2905811, 4901241, 8480231, 7750692, 3544254}
-	fmt.Println(minimumTimeRequired(jobs, 4))
+	fmt.Println(maxLength([]int{2, 2, 3, 4, 3}))
 }
