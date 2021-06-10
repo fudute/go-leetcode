@@ -2165,20 +2165,6 @@ func constructMaximumBinaryTree(nums []int) *TreeNode {
 	return root
 }
 
-func isPowerOfTwo(n int) bool {
-	if n < 0 {
-		return false
-	}
-	x := 1
-	for i := 0; i < 32; i++ {
-		if x == n {
-			return true
-		}
-		x = x << 1
-	}
-	return false
-}
-
 func prisonAfterNDays(cells []int, n int) []int {
 	var c uint8
 	for i := 0; i < len(cells); i++ {
@@ -3867,6 +3853,473 @@ func maxWater(arr []int) int64 {
 	return int64(ret)
 }
 
+func isNumberic(c byte) bool {
+	return c >= '0' && c <= '9'
+}
+
+// eval 中应该是一个合法的表达式，包含数字、括号、加、减、乘。
+func infix2Postfix(eval string) []string {
+	prior := map[byte]int{
+		'(': 0,
+		'+': 1,
+		'-': 1,
+		'*': 2,
+		')': 3,
+	}
+	var st []byte
+	var ret []string
+
+	for i := 0; i < len(eval); i++ {
+		if isNumberic(eval[i]) {
+			j := i + 1
+			for j < len(eval) && isNumberic(eval[j]) {
+				j++
+			}
+			ret = append(ret, eval[i:j])
+			i = j - 1
+		} else if eval[i] == '(' {
+			st = append(st, '(')
+		} else if eval[i] == ')' {
+			for st[len(st)-1] != '(' {
+				ret = append(ret, string(st[len(st)-1]))
+				st = st[:len(st)-1]
+			}
+			st = st[:len(st)-1] // pop '('
+		} else {
+			for len(st) > 0 && prior[st[len(st)-1]] >= prior[eval[i]] {
+				ret = append(ret, string(st[len(st)-1]))
+				st = st[:len(st)-1]
+			}
+			st = append(st, eval[i])
+		}
+	}
+
+	for i := len(st) - 1; i >= 0; i-- {
+		ret = append(ret, string(st[i]))
+	}
+	return ret
+}
+func IntEval(s string) int {
+	post := infix2Postfix(s)
+	st := []int{}
+	for i := 0; i < len(post); i++ {
+		if isNumberic(post[i][0]) {
+			v, _ := strconv.Atoi(post[i])
+			st = append(st, v)
+		} else {
+			if post[i] == "+" {
+				st[len(st)-2] += st[len(st)-1]
+			} else if post[i] == "-" {
+				st[len(st)-2] -= st[len(st)-1]
+			} else if post[i] == "*" {
+				st[len(st)-2] *= st[len(st)-1]
+			}
+			st = st[:len(st)-1]
+		}
+	}
+	return st[0]
+}
+func topKFrequent(words []string, k int) []string {
+	m := make(map[string]int)
+	for i := 0; i < len(words); i++ {
+		m[words[i]]++
+	}
+	var counts []string
+
+	for k := range m {
+		counts = append(counts, k)
+	}
+	sort.Slice(counts, func(i, j int) bool {
+		if m[counts[i]] == m[counts[j]] {
+			return counts[i] > counts[j]
+		}
+		return m[counts[i]] > m[counts[j]]
+	})
+	return counts[:k]
+}
+func reverseParentheses(s string) string {
+	var ret []byte
+	for i := 0; i < len(s); i++ {
+		if s[i] != '(' {
+			ret = append(ret, s[i])
+		} else {
+			j, left, right := 0, 1, 0
+			for j = i + 1; j < len(s); j++ {
+				if s[j] == '(' {
+					left++
+				} else if s[j] == ')' {
+					right++
+				}
+
+				if left == right {
+					break
+				}
+			}
+			sub := []byte(reverseParentheses(s[i+1 : j]))
+
+			for i := 0; i < len(sub)/2; i++ {
+				sub[i], sub[len(sub)-i-1] = sub[len(sub)-1-i], sub[i]
+			}
+			ret = append(ret, sub...)
+			i = j
+		}
+	}
+
+	return string(ret)
+}
+func hammingDistance(x int, y int) int {
+	return bits.OnesCount(uint(x ^ y))
+}
+func isPowerOfTwo(n int) bool {
+	return bits.OnesCount(uint(n)) == 1
+}
+
+func checkSubarraySum(nums []int, k int) bool {
+	m := len(nums)
+	if m < 2 {
+		return false
+	}
+	mp := map[int]int{0: -1}
+	remainder := 0
+	for i, num := range nums {
+		remainder = (remainder + num) % k
+		if prevIndex, has := mp[remainder]; has {
+			if i-prevIndex >= 2 {
+				return true
+			}
+		} else {
+			mp[remainder] = i
+		}
+	}
+	return false
+}
+func removeElements(head *ListNode, val int) *ListNode {
+	ret := &ListNode{Next: head}
+	p := ret
+	for p.Next != nil {
+		if p.Next.Val == val {
+			p.Next = p.Next.Next
+		} else {
+			p = p.Next
+		}
+	}
+	return ret.Next
+}
+
+func findRedundantConnection(edges [][]int) []int {
+	m := make(map[int]int)
+	for _, edge := range edges {
+		v1, ok1 := m[edge[0]]
+		v2, ok2 := m[edge[1]]
+		if ok1 && ok2 {
+			if v1 == v2 {
+				return edge
+			}
+			for k, v := range m {
+				if v == v2 {
+					m[k] = v1
+				}
+			}
+		}
+		if ok1 {
+			m[edge[1]] = v1
+		} else if ok2 {
+			m[edge[0]] = v2
+		} else {
+			m[edge[0]] = edge[0]
+			m[edge[1]] = edge[0]
+		}
+	}
+	return []int{-1, -1}
+}
+
+// NewGrid 根据参数个数，返回对应维度的矩阵
+func NewGrid(length ...int) interface{} {
+	if len(length) == 1 {
+		return make([]int, length[0])
+	}
+	ret := make([]interface{}, length[0])
+
+	for i := 0; i < len(ret); i++ {
+		ret[i] = NewGrid(length[1:]...)
+	}
+
+	return ret
+}
+func findMaxForm(strs []string, m int, n int) int {
+	// dp[i][j][k] 表示str[i:]，m=j, n=k的子问题
+	dp := make([][]int, m+1)
+	for i := 0; i < len(dp); i++ {
+		dp[i] = make([]int, n+1)
+	}
+
+	for i := len(strs) - 1; i >= 0; i-- {
+		var cm, cn int
+		for _, c := range strs[i] {
+			if c == '0' {
+				cm++
+			} else {
+				cn++
+			}
+		}
+		for j := m; j >= 0; j-- {
+			for k := n; k >= 0; k-- {
+				if j >= cm && k >= cn && dp[j-cm][k-cn]+1 > dp[j][k] {
+					dp[j][k] = dp[j-cm][k-cn] + 1
+				}
+			}
+		}
+	}
+	return dp[m][n]
+}
+
+func maxDistance(nums1 []int, nums2 []int) int {
+	var p1, p2 int
+
+	for p1 < len(nums1) && p2 < len(nums2) {
+		if nums1[p1] > nums2[p2] {
+			p1++
+		}
+		p2++
+	}
+
+	if p2-p1-1 > 0 {
+		return p2 - p1 - 1
+	}
+	return 0
+}
+
+func detectCapitalUse(word string) bool {
+	if 'a' <= word[0] && word[0] <= 'z' {
+		return word == strings.ToLower(word)
+	}
+	return word[1:] == strings.ToLower(word[1:]) || word == strings.ToUpper(word)
+}
+
+// func getSkyline(buildings [][]int) [][]int {
+// 	if len(buildings) == 0 {
+// 		return [][]int{}
+// 	}
+// 	// sort之后，第一个是最靠左且最高的
+// 	sort.Slice(buildings, func(i, j int) bool {
+// 		if buildings[i][0] != buildings[j][0] {
+// 			return buildings[i][0] < buildings[j][0]
+// 		}
+
+// 		return buildings[i][2] > buildings[j][2]
+// 	})
+
+// 	var normBuildings [][]int
+// 	var n int // 表示normalizedBuildings的长度-1
+
+// 	normBuildings = append(normBuildings, buildings[0])
+// 	for i := 1; i < len(buildings); i++ {
+// 		if buildings[i][1] > normBuildings[n][1] {
+// 			if buildings[i][2] == normBuildings[n][2] {
+// 				normBuildings[n][2] = buildings[i][2]
+// 			} else {
+// 				if buildings[i][2] > normBuildings[n][2] {
+// 					normBuildings[n][1] = buildings[i][0]
+// 				} else {
+// 					buildings[i][0] = normBuildings[n][2]
+// 				}
+// 				normBuildings = append(normBuildings, buildings[i])
+// 				n++
+// 			}
+// 		} else {
+// 			if buildings[i][2] < normBuildings[n][2] {
+// 				continue
+// 			} else {
+
+// 			}
+// 		}
+// 	}
+// }
+
+func lastStoneWeightII(stones []int) int {
+	// 可以转化为将石头分成两个部分，然后让两部分总重量差值最小
+	var total int
+	for i := 0; i < len(stones); i++ {
+		total += stones[i]
+	}
+
+	// 然后可以转化为总容量为 total/2的 0-1背包问题
+	weight := total / 2
+	// dp[i][j]表示stone[i:]装进容量为j的背包所能得到的最大容量
+	// dp[i][j] = max(dp[i+1][j-stones[i]]+stones[i], dp[i+1][j])
+	dp := make([][]int, len(stones)+1)
+	for i := 0; i < len(dp); i++ {
+		dp[i] = make([]int, weight+1)
+	}
+
+	for i := len(stones) - 1; i >= 0; i-- {
+		for j := 0; j <= weight; j++ {
+			var A, B int
+			if j-stones[i] >= 0 {
+				A = dp[i+1][j-stones[i]] + stones[i]
+			}
+			B = dp[i+1][j]
+			if A > B {
+				dp[i][j] = A
+			} else {
+				dp[i][j] = B
+			}
+		}
+	}
+
+	return total - dp[0][weight]*2
+}
+
+func getLongestPalindrome(A string, n int) int {
+	// dp[i][j] 表示以A[i:j]是否为回文串
+	// dp[i][j] = dp[i+1][j-1] and A[i] == A[j]
+	// dp[i][i] = true
+	// dp[i][i+1] = (A[i] == A[i+1])
+
+	var ret int
+
+	dp := make([][]bool, n)
+	for i := 0; i < len(dp); i++ {
+		dp[i] = make([]bool, n)
+	}
+
+	for i := 0; i < len(dp); i++ {
+		dp[i][i] = true
+		if i+1 < len(dp) && A[i] == A[i+1] {
+			dp[i][i+1] = true
+			ret = 2
+		}
+	}
+
+	for j := 2; j < n; j++ {
+		for i := 0; i < j-1; i++ {
+			dp[i][j] = dp[i+1][j-1] && (A[i] == A[j])
+			if dp[i][j] && j-i+1 > ret {
+				ret = j - i + 1
+			}
+		}
+	}
+
+	return ret
+}
+
+func profitableSchemes(n, minProfit int, group, profit []int) (sum int) {
+	const mod int = 1e9 + 7
+	dp := make([][]int, n+1)
+	for i := range dp {
+		dp[i] = make([]int, minProfit+1)
+		dp[i][0] = 1
+	}
+
+	var max = func(a, b int) int {
+		if a > b {
+			return a
+		}
+		return b
+	}
+
+	for i, members := range group {
+		earn := profit[i]
+		for j := n; j >= members; j-- {
+			for k := minProfit; k >= 0; k-- {
+				dp[j][k] = (dp[j][k] + dp[j-members][max(0, k-earn)]) % mod
+			}
+		}
+	}
+	return dp[n][minProfit]
+}
+
+func countLargestGroup(n int) int {
+	var bitwiseSum = func(num int) int {
+		var ret int
+		for num != 0 {
+			ret += num % 10
+			num /= 10
+		}
+		return ret
+	}
+
+	m := make(map[int]int)
+	for i := 1; i <= n; i++ {
+		s := bitwiseSum(i)
+		m[s]++
+	}
+
+	var ret, length int
+	for _, v := range m {
+		if v > length {
+			length = v
+			ret = 1
+		} else if v == length {
+			ret++
+		}
+	}
+	return ret
+}
+func LIS(arr []int) []int {
+	// write code here
+	tmp := make([]int, len(arr))
+	copy(tmp, arr)
+	sort.Ints(tmp)
+	return LCS(tmp, arr)
+}
+
+func LCS(A, B []int) []int {
+	// dp[i][j] 表示A[:i], B[:j]的LCS
+	// dp[i][j] = dp[i-1][j-1] + 1  A[i-1] == B[j-1]
+	//            max(dp[i-1][j], dp[i][j-1])
+	dp := make([][]int, len(A)+1)
+	c := make([][]byte, len(A)+1)
+	for i := 0; i < len(dp); i++ {
+		dp[i] = make([]int, len(B)+1)
+		c[i] = make([]byte, len(B)+1)
+	}
+
+	for i := 1; i <= len(A); i++ {
+		for j := 1; j <= len(B); j++ {
+			if A[i-1] == B[j-1] {
+				dp[i][j] = dp[i-1][j-1] + 1
+				c[i][j] = '\\'
+			} else {
+				dp[i][j] = dp[i-1][j]
+				c[i][j] = '|'
+				if dp[i][j-1] > dp[i-1][j] {
+					dp[i][j] = dp[i][j-1]
+					c[i][j] = '-'
+				}
+			}
+		}
+	}
+
+	ret := make([]int, dp[len(A)][len(B)])
+	p := len(ret) - 1
+	i, j := len(A), len(B)
+	for i != 0 && j != 0 {
+		if c[i][j] == '\\' {
+			ret[p] = A[i-1]
+			p--
+			i--
+			j--
+		} else if c[i][j] == '|' {
+			i--
+		} else {
+			j--
+		}
+	}
+	return ret
+}
+
+func change(amount int, coins []int) int {
+	dp := make([]int, amount+1)
+	dp[0] = 1
+	for _, coin := range coins {
+		for i := coin; i <= amount; i++ {
+			dp[i] += dp[i-coin]
+		}
+	}
+	return dp[amount]
+}
+
 func main() {
-	fmt.Println(maxLength([]int{2, 2, 3, 4, 3}))
+	fmt.Println(change(500, []int{1, 2, 5}))
 }
