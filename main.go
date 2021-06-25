@@ -3357,10 +3357,6 @@ func shipWithinDays(weights []int, D int) int {
 
 	return high
 }
-func smallestGoodBase(n string) string {
-
-	return ""
-}
 
 // 层序遍历，计算每一层的宽度
 func widthOfBinaryTree(root *TreeNode) int {
@@ -4320,6 +4316,276 @@ func change(amount int, coins []int) int {
 	return dp[amount]
 }
 
+func isNumber(s string) bool {
+	var i, ce, cp int = -1, 0, 0
+	for j := 0; j < len(s); j++ {
+		if s[j] == 'e' || s[j] == 'E' {
+			i = j
+			ce++
+		} else if s[j] == '.' {
+			cp++
+		}
+	}
+	if ce > 1 || cp > 1 {
+		return false
+	}
+	if i != -1 {
+		return isNumber(s[:i]) && isNumber(s[i+1:])
+	}
+	if cp == 0 {
+		return isInteger(s)
+	}
+	return isDecimal(s)
+}
+
+func isInteger(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+
+	if s[0] == '+' || s[0] == '-' {
+		return isInteger(s[1:])
+	}
+
+	for i := 0; i < len(s); i++ {
+		if '0' <= s[i] && s[i] <= '9' {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+func isDecimal(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+
+	if s[0] == '+' || s[0] == '-' {
+		return isDecimal(s[1:])
+	}
+
+	if len(s) <= 1 { // 只包含一个小数点
+		return false
+	}
+	var i int
+	for i = 0; i < len(s) && s[i] != '.'; i++ {
+	}
+
+	left := s[:i]
+	right := s[i+1:]
+	if len(right) > 0 && ('0' > right[0] || right[0] > '9') {
+		return false
+	}
+	return (len(left) == 0 || isInteger(left)) && (len(right) == 0 || isInteger(right))
+}
+
+func maxAreaOfIsland(grid [][]int) int {
+	var dfs func(x, y int, area *int)
+
+	var maxArea int
+	m, n := len(grid), len(grid[0])
+
+	visited := make([][]bool, m)
+	for i := 0; i < len(visited); i++ {
+		visited[i] = make([]bool, n)
+	}
+
+	nextx := []int{-1, 0, 1, 0}
+	nexty := []int{0, 1, 0, -1}
+	dfs = func(x, y int, area *int) {
+		visited[x][y] = true
+		*area++
+		for i := 0; i < 4; i++ {
+			nx := x + nextx[i]
+			ny := y + nexty[i]
+			if 0 <= nx && nx < m && 0 <= ny && ny < n && !visited[nx][ny] && grid[nx][ny] == 1 {
+				dfs(nx, ny, area)
+			}
+		}
+	}
+
+	for i := 0; i < m; i++ {
+		for j := 0; j < n; j++ {
+			if !visited[i][j] && grid[i][j] == 1 {
+				area := 0
+				dfs(i, j, &area)
+				visited[i][j] = true
+				if area > maxArea {
+					maxArea = area
+				}
+			}
+		}
+	}
+
+	return maxArea
+}
+func queryString(s string, n int) bool {
+	for i := 1; i <= n; i++ {
+		str := fmt.Sprintf("%b", i)
+		if !strings.Contains(s, str) {
+			return false
+		}
+	}
+	return true
+}
+func maxPoints(points [][]int) int {
+	var max int
+	if len(points) <= 1 {
+		return len(points)
+	}
+	for i := 0; i < len(points); i++ {
+		for j := i + 1; j < len(points); j++ {
+			c := 0
+
+			for k := 0; k < len(points); k++ {
+				if onSameLine(points[i][0], points[i][1], points[j][0], points[j][1], points[k][0], points[k][1]) {
+					c++
+				}
+			}
+			if c > max {
+				max = c
+			}
+		}
+	}
+	return max
+}
+
+func onSameLine(x1, y1, x2, y2, x3, y3 int) bool {
+	ax := x2 - x1
+	ay := y2 - y1
+	bx := x3 - x1
+	by := y3 - y1
+
+	return ax*by == ay*bx
+}
+func shortestSeq(big []int, small []int) []int {
+	var left, right int
+	ret_left, ret_right := -1, -1
+	m_small := make(map[int]struct{})
+	for i := 0; i < len(small); i++ {
+		m_small[small[i]] = struct{}{}
+	}
+	m_big := make(map[int]int)
+
+	for right < len(big) {
+		if _, ok := m_small[big[right]]; ok {
+			m_big[big[right]]++
+		}
+		for left <= right && len(m_big) == len(m_small) {
+			if _, ok := m_small[big[left]]; ok {
+				m_big[big[left]]--
+				if m_big[big[left]] == 0 {
+					delete(m_big, big[left])
+				}
+			}
+
+			if ret_left == -1 || right-left < ret_right-ret_left {
+				ret_right = right
+				ret_left = left
+			}
+			left++
+		}
+		right++
+	}
+	if ret_left == -1 {
+		return []int{}
+	}
+	return []int{ret_left, ret_right}
+}
+
+// 思路：从最大值到最小值依次定位
+func pancakeSort(arr []int) []int {
+	sorted := make([]int, len(arr))
+	var ret []int
+	copy(sorted, arr)
+
+	sort.Ints(sorted)
+	for j := len(arr) - 1; j > 0; j-- {
+		for i := 0; i <= j; i++ {
+			if arr[i] == sorted[j] {
+				if i != 0 {
+					ret = append(ret, i)
+					reverse(arr[:i+1])
+				}
+				ret = append(ret, j)
+				reverse(arr[:j+1])
+				break
+			}
+		}
+	}
+
+	return ret
+}
+func minMoves(nums []int, limit int) int {
+
+	return 0
+}
+func openLock(deadends []string, target string) int {
+	// 表格类型的最短路径问题要用广度优先搜索,获得的路径一定是最短路径
+	// 然后广度优先搜索往往结合队列一起使用
+	type pair struct {
+		cur  int
+		step int
+	}
+	visited := make([]bool, 10001)
+	for _, v := range deadends {
+		i, _ := strconv.Atoi(v)
+		visited[i] = true
+	}
+
+	iTarget, _ := strconv.Atoi(target)
+
+	q := make([]pair, 0)
+	q = append(q, pair{0, 0})
+	for len(q) > 0 {
+		p := q[0]
+		q = q[1:]
+		if visited[p.cur] {
+			continue
+		}
+		if p.cur == iTarget {
+			return p.step
+		}
+		for i := 0; i < 4; i++ {
+			var next int
+			pow := int(math.Pow10(i))
+			v := (p.cur / pow) % 10
+			if v == 9 {
+				next = p.cur - 9*pow
+			} else {
+				next = p.cur + pow
+			}
+			q = append(q, pair{cur: next, step: p.step + 1})
+
+			if v == 0 {
+				next = p.cur + 9*pow
+			} else {
+				next = p.cur - pow
+			}
+			q = append(q, pair{cur: next, step: p.step + 1})
+		}
+		visited[p.cur] = true
+	}
+	return -1
+}
+func translateNum(num int) int {
+	str := strconv.Itoa(num)
+	dp := make([]int, len(str)+1)
+	// dp[i] 表示str[i:]可以翻译的方法数
+	dp[len(str)-1] = 1
+	dp[len(str)] = 1
+	for i := len(str) - 2; i >= 0; i-- {
+		v, _ := strconv.Atoi(str[i : i+2])
+		if 10 <= v && v < 26 {
+			dp[i] = dp[i+1] + dp[i+2]
+		} else {
+			dp[i] = dp[i+1]
+		}
+	}
+	return dp[0]
+}
+
 func main() {
-	fmt.Println(change(500, []int{1, 2, 5}))
+	fmt.Println(translateNum(12258))
 }
