@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"container/list"
 	"fmt"
 	"math"
@@ -4586,6 +4587,493 @@ func translateNum(num int) int {
 	return dp[0]
 }
 
+func sortedSquares(nums []int) []int {
+	var le, ge []int
+	for i := 0; i < len(nums); i++ {
+		if nums[i] < 0 {
+			le = append(le, nums[i]*nums[i])
+		} else {
+			ge = nums[i:]
+			break
+		}
+	}
+	for i := 0; i < len(ge); i++ {
+		ge[i] = ge[i] * ge[i]
+	}
+	for i, j := 0, len(le)-1; i < j; i, j = i+1, j-1 {
+		le[i], le[j] = le[j], le[i]
+	}
+
+	var ret []int
+	p, q := 0, 0
+	for p < len(le) && q < len(ge) {
+		if le[p] < ge[q] {
+			ret = append(ret, le[p])
+			p++
+		} else {
+			ret = append(ret, ge[q])
+			q++
+		}
+	}
+	if p < len(le) {
+		ret = append(ret, le[p:]...)
+	} else {
+		ret = append(ret, ge[q:]...)
+	}
+	return ret
+}
+
+func convertToTitle(columnNumber int) string {
+	ret := []byte{}
+	// 转换为26进制
+	for columnNumber != 0 {
+		columnNumber--
+		i := columnNumber%26 + 1 // 1~26
+		columnNumber = columnNumber / 26
+		ret = append(ret, byte(i+'A'-1))
+	}
+	for i, j := 0, len(ret)-1; i < j; i, j = i+1, j-1 {
+		ret[i], ret[j] = ret[j], ret[i]
+	}
+	return string(ret)
+}
+
+type Codec struct {
+}
+
+func Constructor() Codec {
+	return Codec{}
+}
+
+// Serializes a tree to a single string.
+func (this *Codec) serialize(root *TreeNode) string {
+	if root == nil {
+		return ""
+	}
+
+	var ret strings.Builder
+	var lastValuePos int
+	q := make([]*TreeNode, 0)
+	q = append(q, root)
+	for len(q) != 0 {
+		node := q[0]
+		q = q[1:]
+		if node == nil {
+			ret.WriteString(" nil")
+		} else {
+			ret.WriteString(" ")
+			ret.WriteString(strconv.Itoa(node.Val))
+			lastValuePos = ret.Len()
+			q = append(q, node.Left)
+			q = append(q, node.Right)
+		}
+	}
+
+	return ret.String()[1:lastValuePos]
+}
+
+//Deserializes your encoded data to tree.
+func (this *Codec) deserialize(data string) *TreeNode {
+	if len(data) == 0 {
+		return nil
+	}
+	tokens := strings.Split(data, " ")
+	var root *TreeNode
+	q := make([]**TreeNode, 0)
+	q = append(q, &root)
+
+	for i := 0; i < len(tokens) && len(q) != 0; i++ {
+		pnode := q[0]
+		q = q[1:]
+		if tokens[i] == "nil" {
+			continue
+		}
+		val, _ := strconv.Atoi(tokens[i])
+		(*pnode) = &TreeNode{}
+		(*pnode).Val = val
+		q = append(q, &((*pnode).Left))
+		q = append(q, &((*pnode).Right))
+	}
+	return root
+}
+func numWays(n int, relation [][]int, k int) int {
+	adj := make([][]int, n)
+	for i := 0; i < len(relation); i++ {
+		adj[relation[i][0]] = append(adj[relation[i][0]], relation[i][1])
+	}
+
+	// visited[i][j]表示从位置i走j步到达n-1位置的方法数
+	visited := make([][]int, n)
+	for i := 0; i < len(visited); i++ {
+		visited[i] = make([]int, k+1)
+		for j := 0; j < len(visited[i]); j++ {
+			visited[i][j] = -1
+		}
+	}
+	var findWays func(cur, k int) int
+	findWays = func(cur, k int) int {
+		if k == 0 {
+			if cur == n-1 {
+				return 1
+			}
+			return 0
+		}
+		if visited[cur][k] != -1 {
+			return visited[cur][k]
+		}
+
+		sum := 0
+		for i := 0; i < len(adj[cur]); i++ {
+			sum += findWays(adj[cur][i], k-1)
+		}
+		visited[cur][k] = sum
+		return sum
+	}
+
+	return findWays(0, k)
+}
+func freqAlphabets(s string) string {
+	sb := strings.Builder{}
+
+	i := 0
+	for i < len(s) {
+		if i+2 < len(s) && s[i+2] == '#' {
+			val, _ := strconv.Atoi(s[i : i+2])
+			sb.WriteByte(byte(val-10) + 'j')
+			i += 3
+		} else {
+			sb.WriteByte(s[i] - '1' + 'a')
+			i++
+		}
+	}
+	return sb.String()
+}
+func numOfBurgers(tomatoSlices int, cheeseSlices int) []int {
+	if tomatoSlices%2 != 0 {
+		return []int{}
+	}
+	t := tomatoSlices/2 - cheeseSlices
+	if t < 0 || cheeseSlices-t < 0 {
+		return []int{}
+	}
+	return []int{t, cheeseSlices - t}
+}
+func maxIceCream(costs []int, coins int) int {
+	sort.Ints(costs)
+	for i := 0; i < len(costs); i++ {
+		if coins < costs[i] {
+			return i
+		}
+		coins -= costs[i]
+	}
+	return len(costs)
+}
+func frequencySort(s string) string {
+	m := make(map[byte]int)
+
+	for i := 0; i < len(s); i++ {
+		m[s[i]]++
+	}
+
+	type pair struct {
+		ch  byte
+		cnt int
+	}
+
+	pairs := make([]pair, 0, len(m))
+	for k, v := range m {
+		pairs = append(pairs, pair{ch: k, cnt: v})
+	}
+	sort.Slice(pairs, func(i, j int) bool {
+		return pairs[i].cnt > pairs[j].cnt
+	})
+
+	sb := strings.Builder{}
+	for _, p := range pairs {
+		sb.Write(bytes.Repeat([]byte{p.ch}, p.cnt))
+	}
+	return sb.String()
+}
+func compressString(S string) string {
+	if len(S) == 0 {
+		return S
+	}
+	sb := strings.Builder{}
+	i := 0
+
+	for i < len(S) {
+		ch := S[i]
+		cnt := 0
+		for i < len(S) && S[i] == ch {
+			cnt++
+		}
+		sb.WriteByte(ch)
+		sb.WriteString(strconv.Itoa(cnt))
+	}
+	if sb.Len() >= len(S) {
+		return S
+	}
+	return sb.String()
+}
+func countOfAtoms(formula string) string {
+
+	var getCount = func(str string) (int, int) {
+		if len(str) == 0 {
+			return 1, 0
+		}
+		for i := 0; i < len(str); i++ {
+			if '0' > str[i] || str[i] > '9' {
+				if i == 0 {
+					return 1, 0
+				} else {
+					c, _ := strconv.Atoi(str[:i])
+					return c, i
+				}
+			}
+		}
+		c, _ := strconv.Atoi(str)
+		return c, len(str)
+	}
+
+	var getName = func(str string) string {
+		for i := 1; i < len(str); i++ {
+			if 'a' <= str[i] && str[i] <= 'z' {
+				continue
+			} else {
+				return str[:i]
+			}
+		}
+		return str
+	}
+
+	var doCountOfAtoms func(formula string) map[string]int
+	doCountOfAtoms = func(formula string) map[string]int {
+		m := make(map[string]int)
+		i := 0
+		for i < len(formula) {
+			if formula[i] == '(' {
+				nBrackets := 1 // 左括号的个数
+				j := i + 1
+				for j < len(formula) {
+					if formula[j] == '(' {
+						nBrackets++
+					} else if formula[j] == ')' {
+						nBrackets--
+						if nBrackets == 0 {
+							break
+						}
+					}
+					j++
+				}
+				cnts := doCountOfAtoms(formula[i+1 : j])
+				cnt, ln := getCount(formula[j+1:])
+				for k, v := range cnts {
+					m[k] += v * cnt
+				}
+				i = j + 1 + ln
+			} else {
+				name := getName(formula[i:])
+				i += len(name)
+				cnt, ln := getCount(formula[i:])
+				i += ln
+				m[name] += cnt
+			}
+		}
+		return m
+	}
+
+	m := doCountOfAtoms(formula)
+	slice := make([]string, 0, len(m))
+	for k, v := range m {
+		if v != 1 {
+			slice = append(slice, k+strconv.Itoa(v))
+		} else {
+			slice = append(slice, k)
+		}
+	}
+	sort.Strings(slice)
+
+	return strings.Join(slice, "")
+}
+
+// [left, right)
+func rangeSum(left, right int) int {
+	n := right - left + 1
+	return left*n + n*(n-1)/2
+}
+func maxProfit(inventory []int, orders int) int {
+	inventory = append(inventory, 0)
+	// if len(inventory) == 1 {
+	// 	return rangeSum(inventory[0]-orders+1, inventory[0])
+	// }
+	sort.Ints(inventory)
+	for i, j := 0, len(inventory)-1; i < j; i, j = i+1, j-1 {
+		inventory[i], inventory[j] = inventory[j], inventory[i]
+	}
+	var ret int
+
+	for i := 0; i < len(inventory)-1; i++ {
+		if orders == 0 {
+			return ret
+		}
+		gap := inventory[i] - inventory[i+1]
+		if orders >= gap*(i+1) {
+			ret = (ret + rangeSum(inventory[i]-gap+1, inventory[i])*(i+1)) % 1000000007
+			orders -= gap * (i + 1)
+		} else {
+			full := orders / (i + 1)    // 可以完全选择的列数
+			partial := orders % (i + 1) // 最后一列可以部分选择的
+			if full != 0 {
+				ret = ret + (rangeSum(inventory[i]-full+1, inventory[i])*(i+1))%1000000007
+			}
+			ret = (ret + partial*(inventory[i]-full)) % 1000000007
+			return ret
+		}
+	}
+
+	return ret
+}
+func displayTable(orders [][]string) [][]string {
+	tables := make(map[int]struct{})
+	foods := make(map[string]struct{})
+	m := make(map[int]map[string]int)
+	for i := 0; i < len(orders); i++ {
+		table, _ := strconv.Atoi(orders[i][1])
+		if _, ok := m[table]; !ok {
+			m[table] = make(map[string]int)
+		}
+		m[table][orders[i][2]]++
+		foods[orders[i][2]] = struct{}{}
+		tables[table] = struct{}{}
+	}
+	sortTables := make([]int, 0, len(tables))
+	sortFoods := make([]string, 0, len(foods))
+	for k := range tables {
+		sortTables = append(sortTables, k)
+	}
+	for k := range foods {
+		sortFoods = append(sortFoods, k)
+	}
+	sort.Strings(sortFoods)
+	sort.Ints(sortTables)
+
+	ret := make([][]string, len(sortTables)+1)
+	for i := 0; i < len(ret); i++ {
+		ret[i] = make([]string, len(sortFoods)+1)
+	}
+	ret[0][0] = "Table"
+	for i := 0; i < len(sortFoods); i++ {
+		ret[0][i+1] = sortFoods[i]
+	}
+	for i := 0; i < len(sortTables); i++ {
+		table := strconv.Itoa(sortTables[i])
+		ret[i+1][0] = table
+		for j := 0; j < len(sortFoods); j++ {
+			cnt, ok := m[sortTables[i]][sortFoods[j]]
+			if ok {
+				ret[i+1][j+1] = strconv.Itoa(cnt)
+			} else {
+				ret[i+1][j+1] = "0"
+			}
+		}
+	}
+	return ret
+}
+
+// 最短路径，方法一：floyd算法，计算两点间最短距离，或者经过第三个点的最短距离
+// 动态规划，dp[i][j] = min(dp[i][k] + dp[k][j], dp[i][j])
+func findTheCity(n int, edges [][]int, distanceThreshold int) int {
+	// 最短路径的状态数组
+	dp := make([][]int, n)
+	// 先初始化
+	for i := 0; i < n; i++ {
+		dp[i] = make([]int, n)
+		for j := 0; j < n; j++ {
+			dp[i][j] = -1
+			if i == j {
+				dp[i][j] = 0
+			}
+		}
+	}
+	// 填出边长
+	for i := 0; i < len(edges); i++ {
+		from := edges[i][0]
+		to := edges[i][1]
+		weight := edges[i][2]
+		// 无向图
+		dp[from][to] = weight
+		dp[to][from] = weight
+	}
+	// dp状态转移方程
+	// k放在第一层是因为后面的k要依赖前面的值
+	for k := 0; k < n; k++ {
+		// 从i到j
+		for i := 0; i < n; i++ {
+			for j := 0; j < n; j++ {
+				// 相同的节点不考虑
+				if i == j || i == k || j == k {
+					continue
+				}
+				// 不通的路也不考虑
+				if dp[i][k] == -1 || dp[k][j] == -1 {
+					continue
+				}
+				tmp := dp[i][k] + dp[k][j]
+				if dp[i][j] == -1 || dp[i][j] > tmp {
+					dp[i][j] = tmp
+					dp[j][i] = tmp
+				}
+			}
+		}
+	}
+	// 统计小于阈值的路径数
+	min := n
+	idx := 0
+	for i := 0; i < n; i++ {
+		cnt := 0
+		for j := 0; j < n; j++ {
+			if i == j {
+				continue
+			}
+			if dp[i][j] <= distanceThreshold {
+				cnt++
+			}
+		}
+		if cnt <= min {
+			min = cnt
+			idx = i
+		}
+	}
+	return idx
+}
+func countPairs_1711(deliciousness []int) int {
+	m := make(map[int]int)
+	for i := 0; i < len(deliciousness); i++ {
+		m[deliciousness[i]]++
+	}
+
+	ret := 0
+	for i := 0; i < 31; i++ {
+		target := 1 << i
+		for k, v := range m {
+			m[k]--
+			if target >= k {
+				sub := target - k
+				if cnt, ok := m[sub]; ok {
+					ret = ret + cnt*v
+				}
+			}
+			m[k]++
+		}
+	}
+
+	return (ret / 2) % 1000000007
+}
 func main() {
-	fmt.Println(translateNum(12258))
+	deliciousness := make([]int, 100000)
+	for i := 0; i < len(deliciousness); i++ {
+		deliciousness[i] = 32
+	}
+	// fmt.Println(countPairs_1711([]int{149, 107, 1, 63, 0, 1, 6867, 1325, 5611, 2581, 39, 89, 46, 18, 12, 20, 22, 234}))
+	fmt.Println(countPairs_1711(deliciousness))
 }

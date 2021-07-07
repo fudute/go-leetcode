@@ -6,7 +6,7 @@ type MapSum struct {
 	data map[string]int
 }
 
-func Constructor() MapSum {
+func NewMapSum() MapSum {
 	ms := MapSum{
 		sum:  make(map[string]int),
 		data: make(map[string]int),
