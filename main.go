@@ -12,6 +12,292 @@ import (
 	"unsafe"
 )
 
+func main() {
+	// tasks := []byte{'A', 'A', 'A', 'A', 'A', 'A', 'B', 'C', 'D', 'E', 'F', 'G'}
+	nums := []int{0, 1, 0, 3, 12}
+	moveZeroes(nums)
+	fmt.Printf("nums: %v\n", nums)
+}
+
+func removeInvalidParentheses(s string) []string {
+	return nil
+}
+
+// 283
+func moveZeroes(nums []int) {
+	var ind int
+	for i := 0; i < len(nums); i++ {
+		if nums[i] != 0 {
+			nums[ind] = nums[i]
+			ind++
+		}
+	}
+	for i := ind + 1; i < len(nums); i++ {
+		nums[i] = 0
+	}
+}
+
+// 239
+func maxSlidingWindow(nums []int, k int) []int {
+	var ret []int
+	if k == 0 {
+		return ret
+	}
+
+	monoSlice := make([]int, 0, k)
+	for i := 0; i < k; i++ {
+		ind := sort.Search(len(monoSlice), func(j int) bool {
+			return monoSlice[j] < nums[i]
+		})
+		monoSlice = monoSlice[0:ind]
+		monoSlice = append(monoSlice, nums[i])
+	}
+	ret = append(ret, monoSlice[0])
+
+	for i := 0; i < len(nums)-k; i++ {
+		// pop nums[i]
+		if nums[i] == monoSlice[0] {
+			monoSlice = monoSlice[1:]
+		}
+		// push nums[i+k]
+
+		ind := sort.Search(len(monoSlice), func(j int) bool {
+			return monoSlice[j] < nums[i+k]
+		})
+		monoSlice = monoSlice[0:ind]
+		monoSlice = append(monoSlice, nums[i+k])
+		ret = append(ret, monoSlice[0])
+	}
+	return ret
+}
+
+func maximalSquare(matrix [][]byte) int {
+	m, n := len(matrix), len(matrix[0])
+	sumMatirx := make([][]int, m+1)
+	for i := 0; i < len(sumMatirx); i++ {
+		sumMatirx[i] = make([]int, n+1)
+	}
+
+	for i := m - 1; i >= 0; i-- {
+		for j := n - 1; j >= 0; j-- {
+			sumMatirx[i][j] = sumMatirx[i][j+1] + sumMatirx[i+1][j] - sumMatirx[i+1][j+1]
+			if matrix[i][j] == '1' {
+				sumMatirx[i][j]++
+			}
+		}
+	}
+
+	var isSquare = func(i, j, lenght int) bool {
+		return sumMatirx[i][j]-sumMatirx[i][j+lenght]-sumMatirx[i+lenght][j]+sumMatirx[i+lenght][j+lenght] == lenght*lenght
+	}
+
+	var maxLen int
+Loop:
+	for lenght := 1; lenght <= m && lenght <= n; lenght++ {
+		for i := 0; i < m-lenght+1; i++ {
+			for j := 0; j < n-lenght+1; j++ {
+				if isSquare(i, j, lenght) {
+					maxLen = lenght
+					continue Loop
+				}
+			}
+		}
+		break
+	}
+	return maxLen * maxLen
+}
+
+// 207
+func canFinish(numCourses int, prerequisites [][]int) bool {
+	depsCnts := make([]int, numCourses)
+
+	deps := make(map[int][]int)
+	for _, p := range prerequisites {
+		if p[1] == p[0] {
+			return false
+		}
+		deps[p[1]] = append(deps[p[1]], p[0])
+		depsCnts[p[0]]++
+	}
+
+	visited := make([]bool, numCourses)
+	for i := 0; i < numCourses; i++ {
+		var ind int = -1
+		for i, depsCnt := range depsCnts {
+			if depsCnt == 0 && !visited[i] {
+				ind = i
+				break
+			}
+		}
+		if ind == -1 {
+			return false
+		}
+		visited[ind] = true
+		for _, d := range deps[ind] {
+			depsCnts[d]--
+		}
+	}
+	return true
+}
+
+func numIslands(grid [][]byte) int {
+
+	var visit func(i, j int)
+	visit = func(i, j int) {
+		if i < 0 || i >= len(grid) || j < 0 || j >= len(grid[0]) || grid[i][j] != '1' {
+			return
+		}
+		grid[i][j] = '0'
+		visit(i-1, j)
+		visit(i, j-1)
+		visit(i+1, j)
+		visit(i, j+1)
+	}
+
+	var count int
+	for i := 0; i < len(grid); i++ {
+		for j := 0; j < len(grid[0]); j++ {
+			if grid[i][j] == '1' {
+				visit(i, j)
+				count++
+			}
+		}
+	}
+	return count
+}
+
+type task struct {
+	name  byte
+	count int
+}
+
+// 621
+func leastInterval(tasks []byte, n int) int {
+	if n == 0 {
+		return len(tasks)
+	}
+
+	cnts := make([]task, 26)
+	for i := 0; i < len(cnts); i++ {
+		cnts[i].name = byte('A' + i)
+	}
+	for _, t := range tasks {
+		cnts[t-'A'].count++
+	}
+
+	sort.Slice(cnts, func(i, j int) bool {
+		return cnts[i].count > cnts[j].count
+	})
+
+	var ret int
+	for cnts[0].count > 0 {
+		for i := 0; i <= n; i++ {
+			if i < len(cnts) && cnts[i].count > 0 {
+				fmt.Printf("%c -> ", cnts[i].name)
+				cnts[i].count--
+				ret++
+			} else {
+				if cnts[0].count > 0 {
+					ret++
+					fmt.Print("idle -> ")
+				}
+			}
+		}
+		sort.Slice(cnts, func(i, j int) bool {
+			return cnts[i].count > cnts[j].count
+		})
+	}
+	fmt.Println()
+	return ret
+}
+
+// leetcode 1400
+func canConstruct(s string, k int) bool {
+	if k > len(s) {
+		return false
+	}
+	cnts := make([]int, 26)
+	for i := 0; i < len(s); i++ {
+		cnts[s[i]-'a']++
+	}
+
+	var odds, events int
+	for _, cnt := range cnts {
+		if cnt%2 != 0 {
+			odds++
+		} else {
+			events++
+		}
+	}
+
+	if odds > k {
+		return false
+	}
+	return true
+}
+
+const (
+	single = 1
+	both   = 2
+)
+
+type downRange struct {
+	beg int
+	end int
+}
+
+func minDeletionSize(strs []string) int {
+	// 合并递减区间
+	return 0
+}
+
+// 删除字符串中的一些字符，使字符串符合字典序
+// 返回序列中的所有递减区间
+func minDeletionSizeOfString(str string) []downRange {
+	var rgs []downRange
+	var beg int
+	for i := 0; i < len(str); i++ {
+		if i == len(str)-1 || str[i] <= str[i+1] {
+			if i != beg {
+				rgs = append(rgs, downRange{beg, i})
+			}
+			beg = i + 1
+		}
+	}
+	return rgs
+}
+
+func minMovesToSeat(seats []int, students []int) int {
+	sort.Ints(seats)
+	sort.Ints(students)
+
+	var ret int
+	for i, seat := range seats {
+		ret += abs(students[i] - seat)
+	}
+	return ret
+}
+
+func minMoves2(nums []int) int {
+	sort.Ints(nums)
+	if len(nums) == 0 {
+		return 0
+	}
+	var ret int
+	mid := nums[len(nums)/2]
+	for _, n := range nums {
+		ret += abs(n - mid)
+	}
+	return ret
+}
+
+func abs(n int) int {
+	if n < 0 {
+		return -n
+	}
+	return n
+}
+
 //ListNode singal linked list
 type ListNode struct {
 	Val  int
@@ -368,8 +654,18 @@ func lengthOfLongestSubstring(s string) int {
 	return ret
 }
 
-func min(nums ...int) int {
-	ret := math.MaxInt64
+func max(first int, nums ...int) int {
+	ret := first
+	for i := 0; i < len(nums); i++ {
+		if nums[i] > ret {
+			ret = nums[i]
+		}
+	}
+	return ret
+}
+
+func min(first int, nums ...int) int {
+	ret := first
 	for i := 0; i < len(nums); i++ {
 		if nums[i] < ret {
 			ret = nums[i]
@@ -4030,19 +4326,6 @@ func findRedundantConnection(edges [][]int) []int {
 	return []int{-1, -1}
 }
 
-// NewGrid 根据参数个数，返回对应维度的矩阵
-func NewGrid(length ...int) interface{} {
-	if len(length) == 1 {
-		return make([]int, length[0])
-	}
-	ret := make([]interface{}, length[0])
-
-	for i := 0; i < len(ret); i++ {
-		ret[i] = NewGrid(length[1:]...)
-	}
-
-	return ret
-}
 func findMaxForm(strs []string, m int, n int) int {
 	// dp[i][j][k] 表示str[i:]，m=j, n=k的子问题
 	dp := make([][]int, m+1)
@@ -5068,12 +5351,4 @@ func countPairs_1711(deliciousness []int) int {
 	}
 
 	return (ret / 2) % 1000000007
-}
-func main() {
-	deliciousness := make([]int, 100000)
-	for i := 0; i < len(deliciousness); i++ {
-		deliciousness[i] = 32
-	}
-	// fmt.Println(countPairs_1711([]int{149, 107, 1, 63, 0, 1, 6867, 1325, 5611, 2581, 39, 89, 46, 18, 12, 20, 22, 234}))
-	fmt.Println(countPairs_1711(deliciousness))
 }

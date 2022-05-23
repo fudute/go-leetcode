@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -29,6 +30,30 @@ func Test_findNthDigit(t *testing.T) {
 	}
 }
 
-func BenchmarkMap(b *testing.B) {
-
+func Test_minDeletionSizeOfString(t *testing.T) {
+	type args struct {
+		str string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []downRange
+	}{
+		{
+			args: args{
+				str: "acbdfea",
+			},
+			want: []downRange{
+				{1, 2},
+				{4, 6},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := minDeletionSizeOfString(tt.args.str); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("minDeletionSizeOfString() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
